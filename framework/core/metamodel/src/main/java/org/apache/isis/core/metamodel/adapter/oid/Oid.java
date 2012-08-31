@@ -21,6 +21,7 @@ package org.apache.isis.core.metamodel.adapter.oid;
 
 import org.apache.isis.applib.annotation.Value;
 import org.apache.isis.core.commons.encoding.Encodable;
+import org.apache.isis.core.metamodel.adapter.version.Version;
 
 
 /**
@@ -39,7 +40,8 @@ public interface Oid extends Encodable {
 
     String enStringNoVersion(OidMarshaller oidMarshaller);
     
-    Long getVersion();
+    Version getVersion();
+    void setVersion(Version version);
 
     /**
      * Flags whether this OID is for a transient (not-yet-persisted) object.
@@ -71,4 +73,5 @@ public interface Oid extends Encodable {
         }
     }
 
+    
 }

@@ -33,7 +33,8 @@ import org.apache.wicket.Component;
 import org.apache.wicket.MarkupContainer;
 import org.apache.wicket.Page;
 import org.apache.wicket.markup.html.basic.Label;
-import org.apache.wicket.markup.html.link.BookmarkablePageLink;
+import org.apache.wicket.markup.html.form.SubmitLink;
+import org.apache.wicket.markup.html.link.AbstractLink;
 import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.model.Model;
 
@@ -41,6 +42,7 @@ import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.commons.authentication.AuthenticationSessionProvider;
 import org.apache.isis.core.commons.ensure.Ensure;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
+import org.apache.isis.core.metamodel.adapter.mgr.AdapterManager.ConcurrencyChecking;
 import org.apache.isis.core.metamodel.consent.Consent;
 import org.apache.isis.core.metamodel.spec.feature.ObjectAction;
 import org.apache.isis.viewer.wicket.model.mementos.ObjectAdapterMemento;
@@ -68,10 +70,11 @@ public class CssMenuItem implements Serializable {
         }
 
         public <T extends Page> Builder link(final Class<T> pageClass) {
-            return link(new BookmarkablePageLink<T>(ID_MENU_LINK, pageClass));
+            final AbstractLink link = new SubmitLink(ID_MENU_LINK); 
+            return link(link);
         }
 
-        public <T extends Page> Builder link(final Link<?> link) {
+        public <T extends Page> Builder link(final AbstractLink link) {
             Ensure.ensureThatArg(link.getId(), is(ID_MENU_LINK));
             cssMenuItem.setLink(link);
             return this;
@@ -108,7 +111,7 @@ public class CssMenuItem implements Serializable {
     private final List<CssMenuItem> subMenuItems = Lists.newArrayList();
     private CssMenuItem parent;
 
-    private Link<?> link;
+    private AbstractLink link;
     private boolean enabled = true; // unless disabled
 
     private String disabledReason;
@@ -141,8 +144,7 @@ public class CssMenuItem implements Serializable {
     }
 
     public Builder newSubMenuItem(final String name) {
-        final Builder builder = CssMenuItem.newMenuItem(name).parent(this);
-        return builder;
+        return CssMenuItem.newMenuItem(name).parent(this);
     }
 
     public List<CssMenuItem> getSubMenuItems() {
@@ -153,11 +155,11 @@ public class CssMenuItem implements Serializable {
         return subMenuItems.size() > 0;
     }
 
-    public Link<?> getLink() {
+    public AbstractLink getLink() {
         return link;
     }
 
-    private void setLink(final Link<?> link) {
+    private void setLink(final AbstractLink link) {
         this.link = link;
     }
 
@@ -194,7 +196,7 @@ public class CssMenuItem implements Serializable {
 
         final CssMenuItem parentMenuItem = this;
 
-        final ObjectAdapter adapter = adapterMemento.getObjectAdapter();
+        final ObjectAdapter adapter = adapterMemento.getObjectAdapter(ConcurrencyChecking.CHECK);
         final Consent visibility = noAction.isVisible(session, adapter);
         if (visibility.isVetoed()) {
             return null;
@@ -202,7 +204,7 @@ public class CssMenuItem implements Serializable {
 
         final LinkAndLabel linkAndLabel = cssMenuLinkFactory.newLink(adapterMemento, noAction, PageAbstract.ID_MENU_LINK);
 
-        final Link<?> link = linkAndLabel.getLink();
+        final AbstractLink link = linkAndLabel.getLink();
         final String actionLabel = linkAndLabel.getLabel();
 
         final Consent usability = noAction.isUsable(session, adapter);
@@ -224,7 +226,7 @@ public class CssMenuItem implements Serializable {
     }
 
     private Component addMenuItemComponentTo(final MarkupContainer markupContainer) {
-        final Link<?> link = getLink();
+        final AbstractLink link = getLink();
         final Label label = new Label(CssMenuItem.ID_MENU_LABEL, Model.of(this.getName()));
 
         if (this.isEnabled() && link != null) {

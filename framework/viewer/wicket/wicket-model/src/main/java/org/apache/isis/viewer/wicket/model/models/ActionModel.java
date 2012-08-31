@@ -24,9 +24,15 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.google.common.collect.Maps;
+
+import org.apache.wicket.Component;
+import org.apache.wicket.PageParameters;
+import org.apache.wicket.markup.html.link.BookmarkablePageLink;
+
 import org.apache.isis.applib.Identifier;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
-import org.apache.isis.core.metamodel.adapter.oid.Oid;
+import org.apache.isis.core.metamodel.adapter.mgr.AdapterManager.ConcurrencyChecking;
 import org.apache.isis.core.metamodel.adapter.oid.OidMarshaller;
 import org.apache.isis.core.metamodel.adapter.oid.RootOid;
 import org.apache.isis.core.metamodel.adapter.oid.RootOidDefault;
@@ -44,11 +50,6 @@ import org.apache.isis.viewer.wicket.model.mementos.ActionParameterMemento;
 import org.apache.isis.viewer.wicket.model.mementos.ObjectAdapterMemento;
 import org.apache.isis.viewer.wicket.model.mementos.PageParameterNames;
 import org.apache.isis.viewer.wicket.model.util.ActionParams;
-import org.apache.wicket.Component;
-import org.apache.wicket.PageParameters;
-import org.apache.wicket.markup.html.link.BookmarkablePageLink;
-
-import com.google.common.collect.Maps;
 
 /**
  * Models an action invocation, either the gathering of arguments for the
@@ -89,16 +90,10 @@ public class ActionModel extends ModelAbstract<ObjectAdapter> {
         SELECT
     }
 
-    /**
-     * Factory; for use directly.
-     */
     public static ActionModel create(final ObjectAdapterMemento targetAdapter, final ActionMemento action, final Mode mode, final SingleResultsMode singleResultsMode) {
         return new ActionModel(targetAdapter, action, mode, singleResultsMode);
     }
 
-    /**
-     * Factory; for use by {@link BookmarkablePageLink}s.
-     */
     public static ActionModel createForPersistent(final PageParameters pageParameters) {
         return new ActionModel(pageParameters);
     }
@@ -108,24 +103,25 @@ public class ActionModel extends ModelAbstract<ObjectAdapter> {
      * 
      * see {@link #ActionModel(PageParameters)}
      */
-    public static PageParameters createPageParameters(final ObjectAdapter adapter, final ObjectAction noAction, final ObjectAdapter contextAdapter, final SingleResultsMode singleResultsMode) {
+    public static PageParameters createPageParameters(final ObjectAdapter adapter, final ObjectAction objectAction, final ObjectAdapter contextAdapter, final SingleResultsMode singleResultsMode) {
         final PageParameters pageParameters = EntityModel.createPageParameters(adapter);
 
-        final String actionType = noAction.getType().name();
-        final String actionNameParmsId = determineActionId(noAction);
+        final String actionType = objectAction.getType().name();
+        final String actionNameParmsId = determineActionId(objectAction);
 
-        final Mode actionMode = determineActionMode(noAction, contextAdapter);
+        final Mode actionMode = determineActionMode(objectAction, contextAdapter);
 
         PageParameterNames.ACTION_TYPE.addTo(pageParameters, actionType);
-        final ObjectSpecification actionOnTypeSpec = noAction.getOnType();
+        final ObjectSpecification actionOnTypeSpec = objectAction.getOnType();
         if (actionOnTypeSpec != null) {
             PageParameterNames.ACTION_OWNING_SPEC.addTo(pageParameters, actionOnTypeSpec.getFullIdentifier());
         }
+
         PageParameterNames.ACTION_NAME_PARMS.addTo(pageParameters, actionNameParmsId);
         PageParameterNames.ACTION_MODE.addTo(pageParameters, actionMode.name());
         PageParameterNames.ACTION_SINGLE_RESULTS_MODE.addTo(pageParameters, singleResultsMode.name());
 
-        addActionParamContextIfPossible(noAction, contextAdapter, pageParameters);
+        addActionParamContextIfPossible(objectAction, contextAdapter, pageParameters);
         return pageParameters;
     }
 
@@ -238,11 +234,6 @@ public class ActionModel extends ModelAbstract<ObjectAdapter> {
         }
     }
 
-//    private static SpecMemento objectSpecFor(final PageParameters pageParameters) {
-//        return SpecMemento.representing(PageParameterNames.OBJECT_SPEC.getFrom(pageParameters));
-//    }
-
-    
     private static RootOid oidFor(final PageParameters pageParameters) {
         String oidStr = PageParameterNames.OBJECT_OID.getFrom(pageParameters);
         return getOidMarshaller().unmarshal(oidStr, RootOid.class);
@@ -342,7 +333,11 @@ public class ActionModel extends ModelAbstract<ObjectAdapter> {
     }
 
     public ObjectAdapter getTargetAdapter() {
-        return targetAdapterMemento.getObjectAdapter();
+        return targetAdapterMemento.getObjectAdapter(getConcurrencyChecking());
+    }
+
+    protected ConcurrencyChecking getConcurrencyChecking() {
+        return actionMemento.getConcurrencyChecking();
     }
 
     public Mode getActionMode() {

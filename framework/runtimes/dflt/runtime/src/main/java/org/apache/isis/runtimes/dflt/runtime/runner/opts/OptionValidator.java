@@ -19,10 +19,10 @@
 
 package org.apache.isis.runtimes.dflt.runtime.runner.opts;
 
-import org.apache.isis.applib.maybe.Maybe;
 import org.apache.isis.runtimes.dflt.runtime.system.DeploymentType;
 
-public interface OptionValidator {
-    public Maybe<String> validate(final DeploymentType deploymentType);
+import com.google.common.base.Optional;
 
+public interface OptionValidator {
+    public Optional<String> validate(final DeploymentType deploymentType);
 }

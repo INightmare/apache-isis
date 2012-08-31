@@ -19,8 +19,8 @@
 
 package org.apache.isis.viewer.wicket.ui.components.scalars.noapplib;
 
+import org.apache.wicket.markup.html.form.AbstractTextComponent;
 import org.apache.wicket.markup.html.form.PasswordTextField;
-import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.model.Model;
 
 import org.apache.isis.applib.value.Password;
@@ -45,7 +45,7 @@ public class IsisPasswordPanel extends ScalarPanelTextFieldParseableAbstract {
     }
 
     @Override
-    protected TextField<String> createTextField() {
+    protected AbstractTextComponent<String> createTextField() {
         final PasswordTextField passwordField = new PasswordTextField(idTextField, new Model<String>() {
             private static final long serialVersionUID = 1L;
 
