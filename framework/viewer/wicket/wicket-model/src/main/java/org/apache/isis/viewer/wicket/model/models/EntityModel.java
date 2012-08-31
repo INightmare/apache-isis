@@ -22,20 +22,24 @@ package org.apache.isis.viewer.wicket.model.models;
 import java.io.Serializable;
 import java.util.Map;
 
+import com.google.common.collect.Maps;
+
+import org.apache.wicket.PageParameters;
+
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
+import org.apache.isis.core.metamodel.adapter.mgr.AdapterManager.ConcurrencyChecking;
 import org.apache.isis.core.metamodel.adapter.oid.OidMarshaller;
 import org.apache.isis.core.metamodel.adapter.oid.RootOid;
+import org.apache.isis.core.metamodel.adapter.version.ConcurrencyException;
 import org.apache.isis.core.metamodel.consent.Consent;
 import org.apache.isis.core.metamodel.spec.ObjectSpecId;
 import org.apache.isis.core.metamodel.spec.ObjectSpecification;
+import org.apache.isis.core.metamodel.spec.SpecificationLoaderSpi;
 import org.apache.isis.core.metamodel.spec.feature.OneToOneAssociation;
 import org.apache.isis.runtimes.dflt.runtime.system.context.IsisContext;
 import org.apache.isis.viewer.wicket.model.mementos.ObjectAdapterMemento;
 import org.apache.isis.viewer.wicket.model.mementos.PageParameterNames;
 import org.apache.isis.viewer.wicket.model.mementos.PropertyMemento;
-import org.apache.wicket.PageParameters;
-
-import com.google.common.collect.Maps;
 
 /**
  * Backing model to represent a {@link ObjectAdapter}.
@@ -88,6 +92,11 @@ public class EntityModel extends ModelAbstract<ObjectAdapter> {
      * Toggled by 'entityDetailsButton'.
      */
     private boolean entityDetailsVisible;
+    
+    /**
+     * {@link ConcurrencyException}, if any, that might have occurred previously
+     */
+    private ConcurrencyException concurrencyException;
 
     // //////////////////////////////////////////////////////////
     // constructors
@@ -138,19 +147,33 @@ public class EntityModel extends ModelAbstract<ObjectAdapter> {
     }
 
     private ObjectSpecification getSpecificationFor(ObjectSpecId objectSpecId) {
-        return IsisContext.getSpecificationLoader().lookupBySpecId(objectSpecId);
+        return getSpecificationLoader().lookupBySpecId(objectSpecId);
     }
-    
+
     // //////////////////////////////////////////////////////////
     // load, setObject
     // //////////////////////////////////////////////////////////
 
-    @Override
-    protected ObjectAdapter load() {
+    /**
+     * Not Wicket API, but used by <tt>EntityPage</tt> to do eager loading
+     * when rendering after post-and-redirect.
+     * @return 
+     */
+    public ObjectAdapter load(ConcurrencyChecking concurrencyChecking) {
         if (adapterMemento == null) {
             return null;
         }
-        return adapterMemento.getObjectAdapter();
+        
+        final ObjectAdapter objectAdapter = adapterMemento.getObjectAdapter(concurrencyChecking);
+        if(concurrencyChecking == ConcurrencyChecking.NO_CHECK) {
+            this.resetPropertyModels();
+        }
+        return objectAdapter;
+    }
+
+    @Override
+    public ObjectAdapter load() {
+        return load(ConcurrencyChecking.CHECK);
     }
 
     @Override
@@ -238,6 +261,7 @@ public class EntityModel extends ModelAbstract<ObjectAdapter> {
      * {@link #getObject() entity}.
      */
     public void resetPropertyModels() {
+        adapterMemento.resetVersion();
         for (final PropertyMemento pm : propertyScalarModels.keySet()) {
             final ScalarModel scalarModel = propertyScalarModels.get(pm);
             final ObjectAdapter associatedAdapter = pm.getProperty().get(getObject());
@@ -289,18 +313,32 @@ public class EntityModel extends ModelAbstract<ObjectAdapter> {
         entityDetailsVisible = !entityDetailsVisible;
     }
 
+    public void setException(ConcurrencyException ex) {
+        this.concurrencyException = ex;
+        
+    }
+
     // //////////////////////////////////////////////////////////
     // Mode
     // //////////////////////////////////////////////////////////
 
+    public String getAndClearConcurrencyExceptionIfAny() {
+        if(concurrencyException == null) {
+            return null;
+        }
+        final String message = concurrencyException.getMessage();
+        concurrencyException = null;
+        return message;
+    }
+    
     public String getReasonInvalidIfAny() {
-        final ObjectAdapter adapter = getObjectAdapterMemento().getObjectAdapter();
+        final ObjectAdapter adapter = getObjectAdapterMemento().getObjectAdapter(ConcurrencyChecking.CHECK);
         final Consent validity = adapter.getSpecification().isValid(adapter);
         return validity.isAllowed() ? null : validity.getReason();
     }
 
     public void apply() {
-        final ObjectAdapter adapter = getObjectAdapterMemento().getObjectAdapter();
+        final ObjectAdapter adapter = getObjectAdapterMemento().getObjectAdapter(ConcurrencyChecking.CHECK);
         for (final ScalarModel scalarModel : propertyScalarModels.values()) {
             final OneToOneAssociation property = scalarModel.getPropertyMemento().getProperty();
             final ObjectAdapter associate = scalarModel.getObject();
@@ -319,5 +357,8 @@ public class EntityModel extends ModelAbstract<ObjectAdapter> {
 		return IsisContext.getOidMarshaller();
 	}
 
+    protected SpecificationLoaderSpi getSpecificationLoader() {
+        return IsisContext.getSpecificationLoader();
+    }
 
 }

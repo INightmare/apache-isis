@@ -87,7 +87,7 @@ import org.apache.isis.core.progmodel.facets.object.ignore.javalang.RemoveSuperc
 import org.apache.isis.core.progmodel.facets.object.ignore.javalang.SyntheticMethodFilteringFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.ignore.jdo.RemoveJdoEnhancementTypesFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.immutable.annotation.ImmutableAnnotationFacetFactory;
-import org.apache.isis.core.progmodel.facets.object.immutable.markerifc.ImmutableMarkerInterfacesFacetFactory;
+import org.apache.isis.core.progmodel.facets.object.immutable.markerifc.ImmutableMarkerInterfaceFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.mask.annotation.MaskAnnotationForTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.maxlen.annotation.MaxLengthAnnotationForTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.multiline.annotation.MultiLineAnnotationOnTypeFacetFactory;
@@ -158,6 +158,7 @@ import org.apache.isis.core.progmodel.facets.value.chars.CharPrimitiveValueTypeF
 import org.apache.isis.core.progmodel.facets.value.chars.CharWrapperValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.color.ColorValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.date.DateValueTypeFacetFactory;
+import org.apache.isis.core.progmodel.facets.value.datejodalocal.JodaLocalDateValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.datesql.JavaSqlDateValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.datetime.DateTimeValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.dateutil.JavaUtilDateValueTypeFacetFactory;
@@ -305,7 +306,7 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
         addFactory(DisabledFacetForPropertyDerivedFromImmutableTypeFacetFactory.class);
         addFactory(DisabledFacetForCollectionDerivedFromImmutableTypeFacetFactory.class);
 
-        addFactory(ImmutableMarkerInterfacesFacetFactory.class);
+        addFactory(ImmutableMarkerInterfaceFacetFactory.class);
 
         addFactory(ViewModelAnnotationFacetFactory.class);
 
@@ -396,6 +397,9 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
         addFactory(TimeValueTypeFacetFactory.class);
         addFactory(ImageValueTypeFacetFactory.class);
         addFactory(JavaAwtImageValueTypeFacetFactory.class);
+
+        // jodatime values
+        addFactory(JodaLocalDateValueTypeFacetFactory.class);
 
         // written to not trample over TypeOf if already installed
         addFactory(CollectionFacetFactory.class);

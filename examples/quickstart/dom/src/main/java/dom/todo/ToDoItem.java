@@ -19,23 +19,27 @@
 
 package dom.todo;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import javax.jdo.annotations.Extension;
+import javax.jdo.JDOHelper;
 import javax.jdo.annotations.IdentityType;
-import javax.jdo.annotations.Version;
+import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.VersionStrategy;
+import javax.jdo.spi.PersistenceCapable;
+
+import org.joda.time.LocalDate;
 
 import org.apache.isis.applib.AbstractDomainObject;
 import org.apache.isis.applib.annotation.Disabled;
 import org.apache.isis.applib.annotation.Hidden;
 import org.apache.isis.applib.annotation.MemberOrder;
+import org.apache.isis.applib.annotation.MultiLine;
+import org.apache.isis.applib.annotation.Named;
+import org.apache.isis.applib.annotation.ObjectType;
+import org.apache.isis.applib.annotation.Optional;
 import org.apache.isis.applib.annotation.Title;
+import org.apache.isis.applib.value.Date;
+import org.apache.isis.runtimes.dflt.objectstores.jdo.applib.annotations.Auditable;
 
 @javax.jdo.annotations.PersistenceCapable(identityType=IdentityType.DATASTORE)
-@javax.jdo.annotations.Discriminator("TODO")
 @javax.jdo.annotations.DatastoreIdentity(strategy=javax.jdo.annotations.IdGeneratorStrategy.IDENTITY)
 @javax.jdo.annotations.Queries( {
     @javax.jdo.annotations.Query(
@@ -45,11 +49,14 @@ import org.apache.isis.applib.annotation.Title;
         name="todo_similarTo", language="JDOQL",  
         value="SELECT FROM dom.todo.ToDoItem WHERE ownedBy == :ownedBy && category == :category")
 })
-@Version(strategy=VersionStrategy.VERSION_NUMBER, column="VERSION",
-         extensions={@Extension(vendorName="datanucleus", key="field-name", value="version")})
-public class ToDoItem extends AbstractDomainObject {
+@javax.jdo.annotations.Version(strategy=VersionStrategy.VERSION_NUMBER, column="VERSION")
+@ObjectType("TODO")
+@Auditable
+public class ToDoItem extends AbstractDomainObject  {
     
-    public static final List<String> CATEGORIES = Collections.unmodifiableList(Arrays.asList("Professional", "Domestic", "Other"));
+    public static enum Category {
+        Professional, Domestic, Other;
+    }
 
     // {{ Description
     private String description;
@@ -66,18 +73,15 @@ public class ToDoItem extends AbstractDomainObject {
     // }}
 
     // {{ Category
-    private String category;
+    private Category category;
 
     @MemberOrder(sequence = "2")
-    public String getCategory() {
+    public Category getCategory() {
         return category;
     }
 
-    public void setCategory(final String category) {
+    public void setCategory(final Category category) {
         this.category = category;
-    }
-    public List<String> choicesCategory() {
-        return CATEGORIES;
     }
     // }}
 
@@ -86,17 +90,46 @@ public class ToDoItem extends AbstractDomainObject {
 
     @Disabled
     @MemberOrder(sequence = "3")
-    public boolean isDone() {
+    public boolean getDone() {
         return done;
     }
 
     public void setDone(final boolean done) {
         this.done = done;
     }
-
     // }}
-    
-    // {{ OwnedBy (property)
+
+    // {{ DueBy (property)
+    private LocalDate dueBy;
+
+    @MemberOrder(sequence = "4")
+    @Optional
+    @Persistent
+    public LocalDate getDueBy() {
+        return dueBy;
+    }
+
+    public void setDueBy(final LocalDate dueBy) {
+        this.dueBy = dueBy;
+    }
+    // }}
+
+    // {{ Notes (property)
+    private String notes;
+
+    @Optional
+    @MultiLine(numberOfLines=5)
+    @MemberOrder(sequence = "6")
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(final String notes) {
+        this.notes = notes;
+    }
+    // }}
+
+    // {{ OwnedBy (property, hidden)
     private String ownedBy;
 
     @Hidden
@@ -109,8 +142,24 @@ public class ToDoItem extends AbstractDomainObject {
     }
     // }}
 
+    // {{ Version (derived property)
+    @Disabled
+    @MemberOrder(sequence = "99")
+    @Named("Version")
+    public Long getVersionSequence() {
+        if(!(this instanceof PersistenceCapable)) {
+            return null;
+        } 
+        PersistenceCapable persistenceCapable = (PersistenceCapable) this;
+        final Long version = (Long) JDOHelper.getVersion(persistenceCapable);
+        return version;
+    }
+    public boolean hideVersionSequence() {
+        return !(this instanceof PersistenceCapable);
+    }
+    // }}
 
-    // {{ markAsDone
+    // {{ markAsDone (action)
     @MemberOrder(sequence = "1")
     public ToDoItem markAsDone() {
         setDone(true);
@@ -122,7 +171,7 @@ public class ToDoItem extends AbstractDomainObject {
     }
     // }}
 
-    // {{ markAsNotDone
+    // {{ markAsNotDone (action)
     @MemberOrder(sequence = "2")
     public ToDoItem markAsNotDone() {
         setDone(false);
@@ -134,39 +183,6 @@ public class ToDoItem extends AbstractDomainObject {
     }
     // }}
 
-
-    // {{ Version (property)
-    private long version;
-
-    @Disabled
-    @MemberOrder(sequence = "3")
-    public long getVersion() {
-        return version;
-    }
-
-    public void setVersion(final long version) {
-        this.version = version;
-    }
-    // }}
-
-
-//    // {{ LastUpdatedAt (property)
-//    private java.util.Date lastUpdatedAt;
-//
-//    @Disabled
-//    @MemberOrder(sequence = "3")
-//    public java.util.Date getLastUpdatedAt() {
-//        return lastUpdatedAt;
-//    }
-//
-//    public void setLastUpdatedAt(final java.util.Date lastUpdatedAt) {
-//        this.lastUpdatedAt = lastUpdatedAt;
-//    }
-//    // }}
-
-
-
-
     // {{ injected: ToDoItems
     @SuppressWarnings("unused")
     private ToDoItems toDoItems;
@@ -175,5 +191,6 @@ public class ToDoItem extends AbstractDomainObject {
         this.toDoItems = toDoItems;
     }
     // }}
+    
 
 }

@@ -19,7 +19,10 @@
 
 package org.apache.isis.viewer.wicket.viewer;
 
+import java.util.List;
 import java.util.ServiceLoader;
+
+import javax.servlet.ServletContext;
 
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -40,12 +43,16 @@ import org.apache.wicket.markup.html.IHeaderResponse;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.internal.HtmlHeaderContainer;
 import org.apache.wicket.protocol.http.WebRequest;
+import org.apache.wicket.settings.IApplicationSettings;
+import org.apache.wicket.settings.IRequestCycleSettings;
+import org.apache.wicket.settings.IRequestCycleSettings.RenderStrategy;
 import org.apache.wicket.util.convert.ConverterLocator;
 
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.commons.authentication.AuthenticationSessionProvider;
 import org.apache.isis.core.commons.authentication.AuthenticationSessionProviderAware;
 import org.apache.isis.core.commons.config.IsisConfigurationBuilder;
+import org.apache.isis.core.commons.config.IsisConfigurationBuilderPrimer;
 import org.apache.isis.core.commons.config.IsisConfigurationBuilderResourceStreams;
 import org.apache.isis.core.commons.resource.ResourceStreamSource;
 import org.apache.isis.core.commons.resource.ResourceStreamSourceContextLoaderClassPath;
@@ -56,6 +63,7 @@ import org.apache.isis.runtimes.dflt.runtime.runner.IsisModule;
 import org.apache.isis.runtimes.dflt.runtime.system.DeploymentType;
 import org.apache.isis.runtimes.dflt.runtime.system.IsisSystem;
 import org.apache.isis.runtimes.dflt.runtime.system.context.IsisContext;
+import org.apache.isis.runtimes.dflt.webapp.WebAppConstants;
 import org.apache.isis.viewer.wicket.model.mementos.ObjectAdapterMemento;
 import org.apache.isis.viewer.wicket.ui.ComponentFactory;
 import org.apache.isis.viewer.wicket.ui.app.cssrenderer.ApplicationCssRenderer;
@@ -204,8 +212,20 @@ public class IsisWicketApplication extends AuthenticatedWebApplication implement
         final ResourceStreamSource rssServletContext = new ResourceStreamSourceForWebInf(getServletContext());
         final ResourceStreamSource rssTcl = ResourceStreamSourceContextLoaderClassPath.create();
         final ResourceStreamSource rssClasspath = new ResourceStreamSourceCurrentClassClassPath();
-        final IsisConfigurationBuilder isisConfigurationBuilder = new IsisConfigurationBuilderResourceStreams(rssTcl, rssClasspath, rssServletContext);
-        return isisConfigurationBuilder;
+        final IsisConfigurationBuilderResourceStreams configurationBuilder = new IsisConfigurationBuilderResourceStreams(rssTcl, rssClasspath, rssServletContext);
+        primeConfigurationBuilder(configurationBuilder, getServletContext());
+        return configurationBuilder;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void primeConfigurationBuilder(final IsisConfigurationBuilder isisConfigurationBuilder, final ServletContext servletContext) {
+        final List<IsisConfigurationBuilderPrimer> isisConfigurationBuilderPrimers = (List<IsisConfigurationBuilderPrimer>) servletContext.getAttribute(WebAppConstants.CONFIGURATION_PRIMERS_KEY);
+        if (isisConfigurationBuilderPrimers == null) {
+            return;
+        }
+        for (final IsisConfigurationBuilderPrimer isisConfigurationBuilderPrimer : isisConfigurationBuilderPrimers) {
+            isisConfigurationBuilderPrimer.primeConfigurationBuilder(isisConfigurationBuilder);
+        }
     }
 
     protected void initWicketComponentInjection(final Injector injector) {
@@ -223,6 +243,13 @@ public class IsisWicketApplication extends AuthenticatedWebApplication implement
     // Wicket Hooks
     // /////////////////////////////////////////////////
 
+    @Override
+    public IRequestCycleSettings getRequestCycleSettings() {
+        final IRequestCycleSettings requestCycleSettings = super.getRequestCycleSettings();
+        requestCycleSettings.setRenderStrategy(IRequestCycleSettings.REDIRECT_TO_RENDER);
+        return requestCycleSettings;
+    }
+    
     /**
      * Installs a {@link AuthenticatedWebSessionForIsis custom implementation}
      * of Wicket's own {@link AuthenticatedWebSession}, effectively associating

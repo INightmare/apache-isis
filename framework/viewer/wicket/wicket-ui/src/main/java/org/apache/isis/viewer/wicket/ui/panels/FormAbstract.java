@@ -21,6 +21,13 @@ package org.apache.isis.viewer.wicket.ui.panels;
 
 import java.util.List;
 
+import org.apache.wicket.ResourceReference;
+import org.apache.wicket.markup.html.IHeaderContributor;
+import org.apache.wicket.markup.html.IHeaderResponse;
+import org.apache.wicket.markup.html.form.Form;
+import org.apache.wicket.markup.html.form.IFormSubmittingComponent;
+import org.apache.wicket.model.IModel;
+
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.commons.authentication.AuthenticationSessionProvider;
 import org.apache.isis.core.commons.authentication.AuthenticationSessionProviderAware;
@@ -32,11 +39,6 @@ import org.apache.isis.viewer.wicket.ui.app.registry.ComponentFactoryRegistry;
 import org.apache.isis.viewer.wicket.ui.app.registry.ComponentFactoryRegistryAccessor;
 import org.apache.isis.viewer.wicket.ui.pages.PageClassRegistry;
 import org.apache.isis.viewer.wicket.ui.pages.PageClassRegistryAccessor;
-import org.apache.wicket.ResourceReference;
-import org.apache.wicket.markup.html.IHeaderContributor;
-import org.apache.wicket.markup.html.IHeaderResponse;
-import org.apache.wicket.markup.html.form.Form;
-import org.apache.wicket.model.IModel;
 
 public abstract class FormAbstract<T> extends Form<T> implements IHeaderContributor, ComponentFactoryRegistryAccessor, PageClassRegistryAccessor, AuthenticationSessionProvider, PersistenceSessionProvider {
 
@@ -71,6 +73,21 @@ public abstract class FormAbstract<T> extends Form<T> implements IHeaderContribu
         final String url = cls.getSimpleName() + ".css";
         response.renderCSSReference(new ResourceReference(cls, url));
     }
+
+
+    // ///////////////////////////////////////////////////////////////////
+    // process() override
+    // ///////////////////////////////////////////////////////////////////
+
+    @Override
+    public void process(IFormSubmittingComponent submittingComponent) {
+        if(submittingComponent instanceof IFormSubmittingComponentWithPreSubmitHook) {
+            IFormSubmittingComponentWithPreSubmitHook componentWithPreSubmitHook = (IFormSubmittingComponentWithPreSubmitHook) submittingComponent;
+            componentWithPreSubmitHook.preSubmit();
+        }
+        super.process(submittingComponent);
+    }
+    
 
     // ///////////////////////////////////////////////////////////////////
     // Convenience

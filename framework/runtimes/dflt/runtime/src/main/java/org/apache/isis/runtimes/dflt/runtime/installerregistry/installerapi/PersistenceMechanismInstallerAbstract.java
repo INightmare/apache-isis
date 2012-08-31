@@ -157,7 +157,7 @@ public abstract class PersistenceMechanismInstallerAbstract extends InstallerAbs
      * Hook method to return an {@link IsisTransactionManager}.
      * 
      * <p>
-     * By default returns a {@link ObjectStoreTransactionManager}.
+     * By default returns a {@link IsisTransactionManager}.
      */
     protected IsisTransactionManager createTransactionManager(final EnlistedObjectDirtying persistor, final TransactionalResource objectStore) {
         return new IsisTransactionManager(persistor, objectStore);
@@ -217,6 +217,9 @@ public abstract class PersistenceMechanismInstallerAbstract extends InstallerAbs
         // wire up components
         runtimeContext.injectInto(container);
         runtimeContext.setContainer(container);
+        for (Object service : serviceList) {
+            runtimeContext.injectInto(service);
+        }
 
         servicesInjector.setContainer(container);
         servicesInjector.setServices(serviceList);
@@ -296,15 +299,6 @@ public abstract class PersistenceMechanismInstallerAbstract extends InstallerAbs
         return InstanceUtil.createInstance(identifierGeneratorClassName, IdentifierGenerator.class);
     }
 
-    /**
-     * Hook method to return {@link AdapterManagerSpi}.
-     * 
-     * <p>
-     * By default returns an {@link AdapterManagerDefault}.
-     */
-    private AdapterManagerSpi createAdapterManager(final IsisConfiguration configuration) {
-        return new AdapterManagerDefault(createPojoRecreator(configuration));
-    }
 
     /**
      * Hook method to return {@link PojoRecreator}.

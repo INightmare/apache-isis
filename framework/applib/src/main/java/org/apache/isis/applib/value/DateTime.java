@@ -153,6 +153,14 @@ public class DateTime extends Magnitude<DateTime> {
         return new Date(dateTime.getMillis());
     }
 
+    /**
+     * 
+     * @return the milliseconds from 1970-01-01T00:00:00Z
+     */
+    public long getMillisSinceEpoch() {
+        return dateTime.getMillis();
+    }
+    
     public int getSeconds() {
         return dateTime.getSecondOfMinute();
     }
@@ -268,6 +276,8 @@ public class DateTime extends Magnitude<DateTime> {
     public long millisSinceEpoch() {
         return dateTime.getMillis();
     }
+    
+    
 
     @Override
     public boolean equals(final Object obj) {

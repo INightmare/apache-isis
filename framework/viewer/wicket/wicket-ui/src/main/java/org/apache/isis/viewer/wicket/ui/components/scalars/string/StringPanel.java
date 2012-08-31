@@ -38,5 +38,5 @@ public class StringPanel extends ScalarPanelTextFieldParseableAbstract {
     protected void addSemantics() {
         super.addSemantics();
     }
-
+    
 }

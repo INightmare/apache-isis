@@ -27,8 +27,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 
 import java.util.Iterator;
 
-import org.apache.log4j.Logger;
-
+import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.commons.debug.DebugBuilder;
 import org.apache.isis.core.commons.ensure.Assert;
 import org.apache.isis.core.commons.ensure.Ensure;
@@ -59,6 +58,7 @@ import org.apache.isis.runtimes.dflt.runtime.system.context.IsisContext;
 import org.apache.isis.runtimes.dflt.runtime.system.persistence.AdapterManagerSpi;
 import org.apache.isis.runtimes.dflt.runtime.system.persistence.OidGenerator;
 import org.apache.isis.runtimes.dflt.runtime.system.persistence.PersistenceSession;
+import org.apache.log4j.Logger;
 
 public class AdapterManagerDefault implements AdapterManagerSpi {
 
@@ -68,7 +68,7 @@ public class AdapterManagerDefault implements AdapterManagerSpi {
     protected final OidAdapterHashMap oidAdapterMap = new OidAdapterHashMap();
 
     private final PojoRecreator pojoRecreator;
-    
+
 
     // //////////////////////////////////////////////////////////////////
     // constructor
@@ -170,6 +170,13 @@ public class AdapterManagerDefault implements AdapterManagerSpi {
         if (adapter != null) {
             return adapter;
         }
+        
+        // pojo may have been lazily loaded by object store, but we haven't yet seen it
+        final ObjectAdapter lazilyLoadedAdapter = pojoRecreator.lazilyLoaded(pojo);
+        if(lazilyLoadedAdapter != null) {
+            return lazilyLoadedAdapter;
+        }
+        
         
         // need to create (and possibly map) the adapter.
         final ObjectSpecification objSpec = getSpecificationLoader().loadSpecification(pojo.getClass());
@@ -275,18 +282,39 @@ public class AdapterManagerDefault implements AdapterManagerSpi {
 
     @Override
     public ObjectAdapter adapterFor(final TypedOid typedOid) {
+        return adapterFor(typedOid, ConcurrencyChecking.NO_CHECK);
+    }
+
+
+    @Override
+    public ObjectAdapter adapterFor(final TypedOid typedOid, final ConcurrencyChecking concurrencyChecking) {
 
         // attempt to locate adapter for the Oid
-        final ObjectAdapter adapterLookedUpByOid = getAdapterFor(typedOid);
-        if (adapterLookedUpByOid != null) {
-            return adapterLookedUpByOid;
-        }
+        ObjectAdapter adapter = getAdapterFor(typedOid);
+        if (adapter != null) {
+            return adapter;
+        } 
         
         final Object pojo = pojoRecreator.recreatePojo(typedOid);
-        return mapRecreatedPojo(typedOid, pojo);
+        adapter = mapRecreatedPojo(typedOid, pojo);
+        
+        final Oid adapterOid = adapter.getOid();
+        if(adapterOid instanceof RootOid) {
+            final RootOid recreatedOid = (RootOid) adapterOid;
+            final RootOid originalOid = (RootOid) typedOid;
+            try {
+                if(concurrencyChecking == ConcurrencyChecking.CHECK) {
+                    recreatedOid.checkLock(getAuthenticationSession().getUserName(), originalOid);
+                }
+            } finally {
+                originalOid.setVersion(recreatedOid.getVersion());
+            }
+        }
+        return adapter;
     }
+
     
-    
+
     @Override
     public void remapRecreatedPojo(ObjectAdapter adapter, final Object pojo) {
         removeAdapter(adapter);
@@ -750,6 +778,11 @@ public class AdapterManagerDefault implements AdapterManagerSpi {
     protected ServicesInjector getServicesInjector() {
         return IsisContext.getPersistenceSession().getServicesInjector();
     }
+
+    protected AuthenticationSession getAuthenticationSession() {
+        return IsisContext.getAuthenticationSession();
+    }
+    
 
 
 }
