@@ -42,7 +42,7 @@ import org.apache.isis.viewer.wicket.ui.components.entity.blocks.propcoll.Entity
 import org.apache.isis.viewer.wicket.ui.components.entity.blocks.summary.EntitySummaryPanelFactory;
 import org.apache.isis.viewer.wicket.ui.components.entity.combined.EntityCombinedPanelFactory;
 import org.apache.isis.viewer.wicket.ui.components.entity.selector.EntitySelectorFactory;
-import org.apache.isis.viewer.wicket.ui.components.entity.tabbed.EntityTabbedPanelFactory;
+import org.apache.isis.viewer.wicket.ui.components.scalars.bytearray.ByteArrayPanelFactory;
 import org.apache.isis.viewer.wicket.ui.components.scalars.jdkdates.JavaSqlDatePanelFactory;
 import org.apache.isis.viewer.wicket.ui.components.scalars.jdkdates.JavaSqlTimePanelFactory;
 import org.apache.isis.viewer.wicket.ui.components.scalars.jdkdates.JavaUtilDatePanelFactory;
@@ -133,6 +133,7 @@ public class ComponentFactoryListDefault implements ComponentFactoryList {
 
     protected void addComponentFactoriesForSpecial(final List<ComponentFactory> componentFactories) {
         componentFactories.add(new WizardPageDescriptionPanelFactory());
+        componentFactories.add(new ByteArrayPanelFactory());
     }
 
     protected void addComponentFactoriesForWelcome(final List<ComponentFactory> componentFactories) {
@@ -187,7 +188,7 @@ public class ComponentFactoryListDefault implements ComponentFactoryList {
         componentFactories.add(new DoublePanelFactory());
 
         componentFactories.add(new StringPanelFactory());
-
+        
         // componentFactories.add(new JavaAwtImagePanelFactory()); //
         // work-in-progress
         componentFactories.add(new JavaUtilDatePanelFactory());

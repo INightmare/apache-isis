@@ -41,12 +41,13 @@ public class CollectionFacetFactory extends FacetFactoryAbstract implements Coll
     }
 
     @Override
-    public void process(final ProcessClassContext processClassContaxt) {
+    public void process(final ProcessClassContext processClassContext) {
 
-        if (collectionTypeRegistry.isCollectionType(processClassContaxt.getCls())) {
-            processCollectionType(processClassContaxt);
-        } else if (collectionTypeRegistry.isArrayType(processClassContaxt.getCls())) {
-            processAsArrayType(processClassContaxt);
+        if (collectionTypeRegistry.isCollectionType(processClassContext.getCls())) {
+            processCollectionType(processClassContext);
+        } else if (collectionTypeRegistry.isArrayType(processClassContext.getCls())
+                && !collectionTypeRegistry.isPrimitiveArrayType(processClassContext.getCls())) {
+            processAsArrayType(processClassContext);
         }
 
     }

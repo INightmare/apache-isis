@@ -152,6 +152,7 @@ import org.apache.isis.core.progmodel.facets.value.bigdecimal.BigDecimalValueTyp
 import org.apache.isis.core.progmodel.facets.value.biginteger.BigIntegerValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.booleans.BooleanPrimitiveValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.booleans.BooleanWrapperValueTypeFacetFactory;
+import org.apache.isis.core.progmodel.facets.value.bytearray.ByteArrayValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.bytes.BytePrimitiveValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.bytes.ByteWrapperValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.chars.CharPrimitiveValueTypeFacetFactory;
@@ -384,6 +385,7 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
         addFactory(JavaUtilDateValueTypeFacetFactory.class);
         addFactory(JavaSqlTimeStampValueTypeFacetFactory.class);
         addFactory(StringValueTypeFacetFactory.class);
+        addFactory(ByteArrayValueTypeFacetFactory.class);
 
         // applib values
         addFactory(DateValueTypeFacetFactory.class);

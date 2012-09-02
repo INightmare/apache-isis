@@ -60,6 +60,11 @@ public class CollectionTypeRegistryDefault extends CollectionTypeRegistryAbstrac
     }
 
     @Override
+    public boolean isPrimitiveArrayType(Class<?> cls) {
+        return cls.isArray() && cls.getComponentType().isPrimitive();
+    }
+
+    @Override
     public Class<?>[] getCollectionType() {
         return collectionTypesAsArray;
     }

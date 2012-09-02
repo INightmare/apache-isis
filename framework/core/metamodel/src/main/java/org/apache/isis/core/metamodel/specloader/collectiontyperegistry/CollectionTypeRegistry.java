@@ -42,6 +42,8 @@ public interface CollectionTypeRegistry extends Injectable, ApplicationScopedCom
     public boolean isCollectionType(Class<?> cls);
 
     public boolean isArrayType(Class<?> cls);
+    
+    public boolean isPrimitiveArrayType(Class<?> cls);
 
     public Class<?>[] getCollectionType();
 

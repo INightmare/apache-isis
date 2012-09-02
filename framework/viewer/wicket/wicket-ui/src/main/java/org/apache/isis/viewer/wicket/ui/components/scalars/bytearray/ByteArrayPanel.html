@@ -20,14 +20,16 @@
 <html>
 	<body>
 		<wicket:panel>
-			<div class="javaAwtImage image scalarPanel">
-				<label for="scalarValue">
+			<div class="byteArray scalarPanel">
+				<label for="scalarValue" wicket:id="scalarIfRegular">
 	      			<span wicket:id="scalarName" class="scalarName">[Label text]</span>
 	      			<span class="scalarValue">
-		      			<img wicket:id="scalarValue"/>
+		      			<input type="file" name="scalarValue" id="scalarValue" wicket:id="scalarValue"/>
+                                        <a wicket:id="scalarIfDisabled">Download</a>
 	      			</span>
 				</label>
-      			<span wicket:id="feedback"></span>
+                                <a wicket:id="scalarIfCompact">Download</a>
+                                <span wicket:id="feedback"></span>
 			</div>
 		</wicket:panel>
 	</body>
