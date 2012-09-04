@@ -22,16 +22,16 @@ package org.apache.isis.progmodels.dflt;
 import org.apache.isis.core.metamodel.progmodel.ProgrammingModelAbstract;
 import org.apache.isis.core.progmodel.facets.actions.debug.annotation.DebugAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.defaults.method.ActionDefaultsFacetFactory;
-import org.apache.isis.core.progmodel.facets.actions.executed.annotation.ExecutedAnnotationFacetFactory;
-import org.apache.isis.core.progmodel.facets.actions.executed.prefix.ExecutedViaNamingConventionFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.exploration.annotation.ExplorationAnnotationFacetFactory;
-import org.apache.isis.core.progmodel.facets.actions.idempotent.IdempotentAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.invoke.ActionInvocationFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.notcontributed.annotation.NotContributedAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.notinservicemenu.annotation.NotInServiceMenuAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.notinservicemenu.method.NotInServiceMenuMethodFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.prototype.annotation.PrototypeAnnotationFacetFactory;
-import org.apache.isis.core.progmodel.facets.actions.queryonly.QueryOnlyAnnotationFacetFactory;
+import org.apache.isis.core.progmodel.facets.actions.semantics.ActionSemanticsAnnotationFacetFactory;
+import org.apache.isis.core.progmodel.facets.actions.semantics.ActionSemanticsFallbackFacetFactory;
+import org.apache.isis.core.progmodel.facets.actions.semantics.IdempotentAnnotationFacetFactory;
+import org.apache.isis.core.progmodel.facets.actions.semantics.QueryOnlyAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.typeof.annotation.TypeOfAnnotationForActionsFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.validate.method.ActionValidationFacetViaValidateMethodFacetFactory;
 import org.apache.isis.core.progmodel.facets.collections.accessor.CollectionAccessorFacetFactory;
@@ -103,7 +103,6 @@ import org.apache.isis.core.progmodel.facets.object.parseable.ParseableFacetFact
 import org.apache.isis.core.progmodel.facets.object.plural.annotation.PluralAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.plural.staticmethod.PluralMethodFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.regex.annotation.RegExFacetAnnotationForTypeFacetFactory;
-import org.apache.isis.core.progmodel.facets.object.stable.annotation.ViewModelAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.title.TitleMethodFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.title.annotation.TitleAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.typicallen.annotation.TypicalLengthAnnotationOnTypeFacetFactory;
@@ -111,6 +110,7 @@ import org.apache.isis.core.progmodel.facets.object.validate.method.ValidateObje
 import org.apache.isis.core.progmodel.facets.object.validperspec.MustSatisfySpecificationOnTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.validprops.ObjectValidPropertiesFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.value.annotation.ValueFacetFactory;
+import org.apache.isis.core.progmodel.facets.object.viewmodel.annotation.ViewModelAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.param.choices.enums.ParameterChoicesFacetDerivedFromChoicesFacetFacetFactory;
 import org.apache.isis.core.progmodel.facets.param.choices.method.ActionChoicesFacetFactory;
 import org.apache.isis.core.progmodel.facets.param.choices.methodnum.ActionParameterChoicesFacetFactory;
@@ -241,6 +241,8 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
         addFactory(ActionParameterDefaultsFacetFactory.class);
         addFactory(QueryOnlyAnnotationFacetFactory.class);
         addFactory(IdempotentAnnotationFacetFactory.class);
+        addFactory(ActionSemanticsAnnotationFacetFactory.class);
+        addFactory(ActionSemanticsFallbackFacetFactory.class);
 
         // members in general
         addFactory(NamedFacetViaNameMethodFacetFactory.class);
@@ -287,8 +289,6 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
 
         addFactory(DisabledAnnotationFacetFactory.class);
         addFactory(EncodableAnnotationFacetFactory.class);
-        addFactory(ExecutedAnnotationFacetFactory.class);
-        addFactory(ExecutedViaNamingConventionFacetFactory.class);
         addFactory(ExplorationAnnotationFacetFactory.class);
         addFactory(PrototypeAnnotationFacetFactory.class);
         addFactory(NotContributedAnnotationFacetFactory.class);
@@ -297,6 +297,7 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
         addFactory(FieldOrderAnnotationFacetFactory.class);
 
         addFactory(HiddenAnnotationForTypeFacetFactory.class);
+        // must come after the TitleAnnotationFacetFactory, because can act as an override
         addFactory(HiddenAnnotationForMemberFacetFactory.class);
 
         addFactory(HiddenObjectViaHiddenMethodFacetFactory.class);
@@ -344,6 +345,7 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
         addFactory(MaskAnnotationForTypeFacetFactory.class);
         addFactory(MaskAnnotationForPropertyFacetFactory.class);
         addFactory(MaskAnnotationForParameterFacetFactory.class);
+        
 
         // must come after any facets that install titles, and after mask
         // if takes precedence over mask.

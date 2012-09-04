@@ -34,6 +34,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.apache.isis.applib.Identifier;
+import org.apache.isis.applib.annotation.Where;
 import org.apache.isis.applib.events.PropertyModifyEvent;
 import org.apache.isis.applib.events.PropertyUsabilityEvent;
 import org.apache.isis.applib.events.PropertyVisibilityEvent;
@@ -51,7 +52,7 @@ import org.apache.isis.core.metamodel.spec.SpecificationLoader;
 import org.apache.isis.core.metamodel.spec.feature.OneToOneAssociation;
 import org.apache.isis.core.metamodel.specloader.specimpl.dflt.ObjectSpecificationDefault;
 import org.apache.isis.core.progmodel.facets.members.disable.DisabledFacet;
-import org.apache.isis.core.progmodel.facets.members.disable.staticmethod.DisabledFacetAlways;
+import org.apache.isis.core.progmodel.facets.members.disable.staticmethod.DisabledFacetAlwaysEverywhere;
 import org.apache.isis.core.progmodel.facets.properties.accessor.PropertyAccessorFacetViaAccessor;
 import org.apache.isis.core.progmodel.facets.properties.modify.PropertySetterFacetViaSetterMethod;
 import org.apache.isis.core.runtime.authentication.standard.SimpleSession;
@@ -169,7 +170,7 @@ public class WrappedFactoryDefaultTest_wrappedObject_transient {
     public void shouldNotBeAbleToModifyProperty() {
 
         // given
-        final DisabledFacet disabledFacet = new DisabledFacetAlways(mockPasswordMember);
+        final DisabledFacet disabledFacet = new DisabledFacetAlwaysEverywhere(mockPasswordMember);
         facets = Arrays.asList((Facet)disabledFacet, new PropertySetterFacetViaSetterMethod(setPasswordMethod, mockPasswordMember));
 
         final Consent visibilityConsent = new Allow(new InteractionResult(new PropertyVisibilityEvent(employeeDO, null)));
@@ -183,10 +184,10 @@ public class WrappedFactoryDefaultTest_wrappedObject_transient {
                 allowing(mockPasswordMember).getFacets(with(any(Filter.class)));
                 will(returnValue(facets));
                 
-                allowing(mockPasswordMember).isVisible(session, mockEmployeeAdapter);
+                allowing(mockPasswordMember).isVisible(session, mockEmployeeAdapter, Where.ANYWHERE);
                 will(returnValue(visibilityConsent));
                 
-                allowing(mockPasswordMember).isUsable(session, mockEmployeeAdapter);
+                allowing(mockPasswordMember).isUsable(session, mockEmployeeAdapter, Where.ANYWHERE);
                 will(returnValue(usabilityConsent));
             }
         });
@@ -207,10 +208,10 @@ public class WrappedFactoryDefaultTest_wrappedObject_transient {
 
         context.checking(new Expectations() {
             {
-                allowing(mockPasswordMember).isVisible(session, mockEmployeeAdapter);
+                allowing(mockPasswordMember).isVisible(session, mockEmployeeAdapter, Where.ANYWHERE);
                 will(returnValue(visibilityConsent));
                 
-                allowing(mockPasswordMember).isUsable(session, mockEmployeeAdapter);
+                allowing(mockPasswordMember).isUsable(session, mockEmployeeAdapter, Where.ANYWHERE);
                 will(returnValue(usabilityConsent));
                 
                 allowing(mockPasswordMember).isAssociationValid(mockEmployeeAdapter, mockPasswordAdapter);
