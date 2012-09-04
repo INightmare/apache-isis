@@ -21,6 +21,8 @@ package org.apache.isis.viewer.scimpi.dispatcher.view.simple;
 
 import java.util.List;
 
+import org.apache.isis.applib.annotation.When;
+import org.apache.isis.applib.annotation.Where;
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
 import org.apache.isis.core.metamodel.facets.object.immutable.ImmutableFacet;
@@ -33,14 +35,21 @@ import org.apache.isis.viewer.scimpi.dispatcher.processor.Request;
 
 public class EditLink extends AbstractLink {
 
+    // REVIEW: should provide this rendering context, rather than hardcoding.
+    // the net effect currently is that class members annotated with 
+    // @Hidden(where=Where.ANYWHERE) or @Disabled(where=Where.ANYWHERE) will indeed
+    // be hidden/disabled, but will be visible/enabled (perhaps incorrectly) 
+    // for any other value for Where
+    private final Where where = Where.ANYWHERE;
+
     @Override
     protected boolean valid(final Request request, final ObjectAdapter adapter) {
         final ObjectSpecification specification = adapter.getSpecification();
         final AuthenticationSession session = IsisContext.getAuthenticationSession();
-        final List<ObjectAssociation> visibleFields = specification.getAssociations(ObjectAssociationFilters.dynamicallyVisible(session, adapter));
+        final List<ObjectAssociation> visibleFields = specification.getAssociations(ObjectAssociationFilters.dynamicallyVisible(session, adapter, where));
         final ImmutableFacet facet = specification.getFacet(ImmutableFacet.class);
-        final boolean isImmutable = facet != null && facet.value() == org.apache.isis.core.metamodel.facets.When.ALWAYS;
-        final boolean isImmutableOncePersisted = facet != null && facet.value() == org.apache.isis.core.metamodel.facets.When.ONCE_PERSISTED && adapter.representsPersistent();
+        final boolean isImmutable = facet != null && facet.when() == When.ALWAYS;
+        final boolean isImmutableOncePersisted = facet != null && facet.when() == When.ONCE_PERSISTED && adapter.representsPersistent();
         return visibleFields.size() > 0 && !isImmutable && !isImmutableOncePersisted;
     }
 

@@ -22,6 +22,8 @@ package org.apache.isis.viewer.html.context;
 import java.util.List;
 
 import org.apache.isis.applib.Identifier;
+import org.apache.isis.applib.annotation.ActionSemantics;
+import org.apache.isis.applib.annotation.Where;
 import org.apache.isis.applib.filter.Filter;
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
@@ -38,8 +40,6 @@ import org.apache.isis.core.metamodel.runtimecontext.RuntimeContext;
 import org.apache.isis.core.metamodel.spec.ActionType;
 import org.apache.isis.core.metamodel.spec.Instance;
 import org.apache.isis.core.metamodel.spec.ObjectSpecification;
-import org.apache.isis.core.metamodel.spec.Target;
-import org.apache.isis.core.metamodel.spec.feature.ActionSemantics;
 import org.apache.isis.core.metamodel.spec.feature.ObjectAction;
 import org.apache.isis.core.metamodel.spec.feature.ObjectActionParameter;
 
@@ -184,11 +184,6 @@ public class ObjectActionNoop implements ObjectAction {
     }
 
     @Override
-    public Target getTarget() {
-        return null;
-    }
-
-    @Override
     public ActionType getType() {
         return null;
     }
@@ -209,7 +204,7 @@ public class ObjectActionNoop implements ObjectAction {
     }
 
     @Override
-    public VisibilityContext<?> createVisibleInteractionContext(final AuthenticationSession session, final InteractionInvocationMethod invocationMethod, final ObjectAdapter targetObjectAdapter) {
+    public VisibilityContext<?> createVisibleInteractionContext(final AuthenticationSession session, final InteractionInvocationMethod invocationMethod, final ObjectAdapter targetObjectAdapter, Where where) {
         return null;
     }
 
@@ -219,12 +214,12 @@ public class ObjectActionNoop implements ObjectAction {
     }
 
     @Override
-    public Consent isVisible(final AuthenticationSession session, final ObjectAdapter target) {
+    public Consent isVisible(final AuthenticationSession session, final ObjectAdapter target, Where where) {
         return Allow.DEFAULT;
     }
 
     @Override
-    public Consent isUsable(final AuthenticationSession session, final ObjectAdapter target) {
+    public Consent isUsable(final AuthenticationSession session, final ObjectAdapter target, Where where) {
         return Allow.DEFAULT;
     }
 
@@ -244,7 +239,7 @@ public class ObjectActionNoop implements ObjectAction {
     }
 
     @Override
-    public UsabilityContext<?> createUsableInteractionContext(final AuthenticationSession session, final InteractionInvocationMethod invocationMethod, final ObjectAdapter target) {
+    public UsabilityContext<?> createUsableInteractionContext(final AuthenticationSession session, final InteractionInvocationMethod invocationMethod, final ObjectAdapter target, Where where) {
         return null;
     }
 
@@ -310,8 +305,8 @@ public class ObjectActionNoop implements ObjectAction {
     }
 
     @Override
-    public ActionSemantics getSemantics() {
-        return null;
+    public ActionSemantics.Of getSemantics() {
+        return ActionSemantics.Of.NON_IDEMPOTENT;
     }
 
 }
