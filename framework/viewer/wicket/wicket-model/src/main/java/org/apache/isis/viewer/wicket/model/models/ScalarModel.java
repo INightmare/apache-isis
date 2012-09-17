@@ -419,4 +419,7 @@ public class ScalarModel extends EntityModel {
         return kind.getChoices(this);
     }
 
+    public ObjectAdapter getParent() {
+        return parentObjectAdapterMemento.getObjectAdapter();
+    }
 }
