@@ -130,6 +130,7 @@ import org.apache.isis.core.progmodel.facets.param.validate.regexannot.RegExFace
 import org.apache.isis.core.progmodel.facets.properties.accessor.PropertyAccessorFacetFactory;
 import org.apache.isis.core.progmodel.facets.properties.choices.enums.PropertyChoicesFacetDerivedFromChoicesFacetFacetFactory;
 import org.apache.isis.core.progmodel.facets.properties.choices.method.PropertyChoicesFacetFactory;
+import org.apache.isis.core.progmodel.facets.properties.content.ContentDescriptionFacetViaMethodFactory;
 import org.apache.isis.core.progmodel.facets.properties.defaults.fromtype.PropertyDefaultDerivedFromTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.properties.defaults.method.PropertyDefaultFacetFactory;
 import org.apache.isis.core.progmodel.facets.properties.disabled.fromimmutable.DisabledFacetForPropertyDerivedFromImmutableTypeFacetFactory;
@@ -251,6 +252,7 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
         addFactory(HiddenFacetViaHideForSessionMethodFacetFactory.class);
         addFactory(HiddenFacetViaAlwaysHideMethodFacetFactory.class);
         addFactory(HiddenFacetViaHideMethodFacetFactory.class);
+        addFactory(ContentDescriptionFacetViaMethodFactory.class);
 
         // objects
         addFactory(ObjectSpecIdAnnotationFacetFactory.class);

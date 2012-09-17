@@ -46,7 +46,6 @@ public class LazyLoadedPropertyFacetFactoryTest extends AbstractFacetFactoryTest
     private Facet checkFacetForMethod(String methodName) {
         final Method method = findMethod(LazyLoadedPropertyFacetFactoryTest.Customer.class, methodName);
         facetFactory.process(new ProcessMethodContext(LazyLoadedPropertyFacetFactoryTest.Customer.class, method, methodRemover, facetedMethod));
-        final Filter<Facet> filter = Filters.any();
         return facetedMethod.getFacet(LazyLoadedPropertyFacet.class);
     }
     

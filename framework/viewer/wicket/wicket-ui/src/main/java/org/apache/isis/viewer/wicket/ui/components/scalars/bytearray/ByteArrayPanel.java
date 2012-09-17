@@ -16,10 +16,14 @@
 package org.apache.isis.viewer.wicket.ui.components.scalars.bytearray;
 
 import java.io.IOException;
-import java.io.InputStream;
+import org.apache.isis.applib.content.ContentDescription;
+import org.apache.isis.applib.content.DefaultContentDescription;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
+import org.apache.isis.core.metamodel.facetapi.FacetHolder;
+import org.apache.isis.core.progmodel.facets.properties.content.ContentDescriptionFacetViaMethod;
 import org.apache.isis.viewer.wicket.model.models.ScalarModel;
 import org.apache.isis.viewer.wicket.ui.components.scalars.ScalarPanelAbstract;
+import org.apache.log4j.Logger;
 import org.apache.wicket.Component;
 import org.apache.wicket.markup.html.DynamicWebResource;
 import org.apache.wicket.markup.html.DynamicWebResource.ResourceState;
@@ -44,6 +48,8 @@ public class ByteArrayPanel extends ScalarPanelAbstract {
     private static final String ID_SCALAR_NAME = "scalarName";
     private static final String ID_SCALAR_VALUE = "scalarValue";
     private static final String ID_FEEDBACK = "feedback";
+    
+    private static final Logger LOG = Logger.getLogger(ByteArrayPanel.class);
     
     public ByteArrayPanel(final String id, final ScalarModel model) {
         super(id, model);
@@ -97,59 +103,72 @@ public class ByteArrayPanel extends ScalarPanelAbstract {
         byte[] content = null;
         try {
             content = IOUtils.toByteArray(fileUpload.getInputStream());
-        } catch (IOException exception) {}
+        } catch (IOException exception) {
+            LOG.error("Error while reading uploaded content", exception);
+        }
         
         return content;
     }
     
     private ResourceLink createResourceLink(String id) {
+        final ContentDescription description = getContentDescription(getModel());
+        final String filename = description.getName();
         
-        final DynamicWebResource wsrc = new DynamicWebResource() {
+        final DynamicWebResource wsrc = new DynamicWebResource(filename) {
             @Override
             protected ResourceState getResourceState() {
                 return new DynamicWebResource.ResourceState() {
 
                     @Override
                     public byte[] getData() {
+                        // Will throw an NPE if no content is available
+                        // should either check if content is available,
+                        // but that requires some additional effort to
+                        // get the availability from DB or just load the
+                        // whole thing all the time
                         return (byte[]) getModel().getObject().getObject();
                     }
 
                     @Override
                     public String getContentType() {
-                        return "application/octet-stream";
+                        return description.getMimeType();
                     }
                 };
             }
+            
         };
         
         final ResourceLink resourceLink = new ResourceLink(id, wsrc);
         return resourceLink;
     }
     
-    /**
-     * Optional hook.
-     */
     protected void onBeforeRenderWhenViewMode() {
         FormComponentLabel formComponentLabel = (FormComponentLabel) getComponentForRegular();
         formComponentLabel.get(ID_SCALAR_IF_DISABLED).setVisible(true);
         formComponentLabel.get(ID_SCALAR_VALUE).setVisible(false);
     }
 
-    /**
-     * Optional hook.
-     */
     protected void onBeforeRenderWhenDisabled(final String disableReason) {
         FormComponentLabel formComponentLabel = (FormComponentLabel) getComponentForRegular();
         formComponentLabel.get(ID_SCALAR_IF_DISABLED).setVisible(true);
         formComponentLabel.get(ID_SCALAR_VALUE).setVisible(false);
     }
 
-    /**
-     * Optional hook.
-     */
     protected void onBeforeRenderWhenEnabled() {
         FormComponentLabel formComponentLabel = (FormComponentLabel) getComponentForRegular();
         formComponentLabel.get(ID_SCALAR_IF_DISABLED).setVisible(false);
         formComponentLabel.get(ID_SCALAR_VALUE).setVisible(true);
+    }
+    
+    private ContentDescription getContentDescription(final ScalarModel model) {
+        ContentDescriptionFacetViaMethod contentDescriptionFacet = 
+                                model.getFacet(ContentDescriptionFacetViaMethod.class);
+        
+        if (contentDescriptionFacet == null) {
+            return new DefaultContentDescription("default", "application/octet-stream");
+        } else {
+            // Need to call this on the parent, as the model is the byte array
+            return contentDescriptionFacet.getContentDescription(model.getParent());
+        }
     }
 }

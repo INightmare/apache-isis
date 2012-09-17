@@ -28,6 +28,7 @@ public class MethodPrefixConstants {
     public static final String ADD_TO_PREFIX = "addTo";
     public static final String REMOVE_FROM_PREFIX = "removeFrom";
 
+    public static final String DESCRIBE_PREFIX = "describe";
     public static final String NAME_PREFIX = "name";
     public static final String DESCRIPTION_PREFIX = "description";
     public static final String OPTIONAL_PREFIX = "optional";
