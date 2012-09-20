@@ -24,7 +24,8 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 
-import org.apache.wicket.PageParameters;
+import org.apache.wicket.request.mapper.parameter.PageParameters;
+import org.apache.wicket.request.resource.PackageResource;
 
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
 import org.apache.isis.core.metamodel.adapter.mgr.AdapterManager.ConcurrencyChecking;
@@ -32,6 +33,7 @@ import org.apache.isis.core.metamodel.adapter.oid.OidMarshaller;
 import org.apache.isis.core.metamodel.adapter.oid.RootOid;
 import org.apache.isis.core.metamodel.adapter.version.ConcurrencyException;
 import org.apache.isis.core.metamodel.consent.Consent;
+import org.apache.isis.core.metamodel.facets.object.icon.IconFacet;
 import org.apache.isis.core.metamodel.spec.ObjectSpecId;
 import org.apache.isis.core.metamodel.spec.ObjectSpecification;
 import org.apache.isis.core.metamodel.spec.SpecificationLoaderSpi;
@@ -52,6 +54,7 @@ public class EntityModel extends ModelAbstract<ObjectAdapter> {
 
     private static final long serialVersionUID = 1L;
     
+
     // //////////////////////////////////////////////////////////
     // factory methods for PageParameters
     // //////////////////////////////////////////////////////////
@@ -80,12 +83,18 @@ public class EntityModel extends ModelAbstract<ObjectAdapter> {
         return pageParameters;
     }
 
+    public enum RenderingHint {
+        REGULAR,
+        COMPACT
+    }
+
 	public enum Mode {
         VIEW, EDIT;
     }
 
     private ObjectAdapterMemento adapterMemento;
     private Mode mode = Mode.VIEW;
+    private RenderingHint renderingHint = RenderingHint.REGULAR;
     private final Map<PropertyMemento, ScalarModel> propertyScalarModels = Maps.newHashMap();
 
     /**
@@ -270,8 +279,16 @@ public class EntityModel extends ModelAbstract<ObjectAdapter> {
     }
 
     // //////////////////////////////////////////////////////////
-    // Mode, entityDetailsVisible
+    // RenderingHint, Mode, entityDetailsVisible
     // //////////////////////////////////////////////////////////
+
+
+    public RenderingHint getRenderingHint() {
+        return renderingHint;
+    }
+    public void setRenderingHint(RenderingHint renderingHint) {
+        this.renderingHint = renderingHint;
+    }
 
     public Mode getMode() {
         return mode;
@@ -313,14 +330,14 @@ public class EntityModel extends ModelAbstract<ObjectAdapter> {
         entityDetailsVisible = !entityDetailsVisible;
     }
 
+    
+    // //////////////////////////////////////////////////////////
+    // concurrency exceptions
+    // //////////////////////////////////////////////////////////
+
     public void setException(ConcurrencyException ex) {
         this.concurrencyException = ex;
-        
     }
-
-    // //////////////////////////////////////////////////////////
-    // Mode
-    // //////////////////////////////////////////////////////////
 
     public String getAndClearConcurrencyExceptionIfAny() {
         if(concurrencyException == null) {
@@ -330,7 +347,11 @@ public class EntityModel extends ModelAbstract<ObjectAdapter> {
         concurrencyException = null;
         return message;
     }
-    
+
+    // //////////////////////////////////////////////////////////
+    // validation
+    // //////////////////////////////////////////////////////////
+
     public String getReasonInvalidIfAny() {
         final ObjectAdapter adapter = getObjectAdapterMemento().getObjectAdapter(ConcurrencyChecking.CHECK);
         final Consent validity = adapter.getSpecification().isValid(adapter);
@@ -348,7 +369,7 @@ public class EntityModel extends ModelAbstract<ObjectAdapter> {
         toViewMode();
     }
 
-    
+
     // //////////////////////////////////////////////////////////
     // Dependencies (from context)
     // //////////////////////////////////////////////////////////

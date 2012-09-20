@@ -35,6 +35,7 @@ import org.apache.isis.core.metamodel.adapter.version.ConcurrencyException;
 import org.apache.isis.core.metamodel.consent.Consent;
 import org.apache.isis.core.metamodel.facetapi.Facet;
 import org.apache.isis.core.metamodel.facetapi.FacetHolder;
+import org.apache.isis.core.metamodel.facetapi.FacetProvider;
 import org.apache.isis.core.metamodel.facets.mandatory.MandatoryFacet;
 import org.apache.isis.core.metamodel.facets.object.parseable.ParseableFacet;
 import org.apache.isis.core.metamodel.spec.ObjectSpecId;
@@ -56,7 +57,7 @@ import org.apache.isis.viewer.wicket.model.util.ClassLoaders;
  * Is the backing model to each of the fields that appear in forms (for entities
  * or action dialogs).
  */
-public class ScalarModel extends EntityModel {
+public class ScalarModel extends EntityModel implements FacetProvider {
 
     private static final long serialVersionUID = 1L;
 
@@ -157,6 +158,13 @@ public class ScalarModel extends EntityModel {
             public void resetVersion(ScalarModel scalarModel) {
                 scalarModel.parentObjectAdapterMemento.resetVersion();
             }
+
+            @Override
+            public String getDescribedAs(final ScalarModel scalarModel) {
+                final PropertyMemento propertyMemento = scalarModel.getPropertyMemento();
+                final OneToOneAssociation property = propertyMemento.getProperty();
+                return property.getDescription();
+            }
         },
         PARAMETER {
             @Override
@@ -212,7 +220,7 @@ public class ScalarModel extends EntityModel {
 
             @Override
             public String validate(final ScalarModel scalarModel, final ObjectAdapter proposedAdapter) {
-                // TODO - not supported in NOF 4.0.0
+                // TODO - not yet supported.
                 return null;
             }
 
@@ -239,6 +247,12 @@ public class ScalarModel extends EntityModel {
             @Override
             public void resetVersion(ScalarModel scalarModel) {
                 // no-op?
+            }
+            @Override
+            public String getDescribedAs(final ScalarModel scalarModel) {
+                final ActionParameterMemento parameterMemento = scalarModel.getParameterMemento();
+                final ObjectActionParameter actionParameter = parameterMemento.getActionParameter();
+                return actionParameter.getDescription();
             }
         };
 
@@ -277,10 +291,13 @@ public class ScalarModel extends EntityModel {
 
         public abstract void resetVersion(ScalarModel scalarModel);
 
+        public abstract String getDescribedAs(ScalarModel scalarModel);
     }
+
 
     private final Kind kind;
     private final ObjectAdapterMemento parentObjectAdapterMemento;
+
 
     /**
      * Populated only if {@link #getKind()} is {@link Kind#PARAMETER}
@@ -444,6 +461,10 @@ public class ScalarModel extends EntityModel {
 
     public void resetVersion() {
         kind.resetVersion(this);
+    }
+
+    public String getDescribedAs() {
+        return kind.getDescribedAs(this);
     }
 
 }

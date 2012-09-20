@@ -19,8 +19,11 @@
 
 package org.apache.isis.viewer.wicket.ui.components.scalars;
 
+import java.io.Serializable;
+
 import org.apache.wicket.AttributeModifier;
 import org.apache.wicket.Component;
+import org.apache.wicket.MarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.AbstractTextComponent;
 import org.apache.wicket.markup.html.form.FormComponentLabel;
@@ -28,16 +31,17 @@ import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.panel.ComponentFeedbackPanel;
 import org.apache.wicket.model.Model;
 
+import org.apache.isis.core.metamodel.facets.SingleIntValueFacet;
 import org.apache.isis.core.metamodel.facets.maxlen.MaxLengthFacet;
 import org.apache.isis.core.metamodel.facets.typicallen.TypicalLengthFacet;
-import org.apache.isis.core.metamodel.spec.ObjectSpecification;
 import org.apache.isis.viewer.wicket.model.models.ScalarModel;
+import org.apache.isis.viewer.wicket.ui.util.CssClassAppender;
 
 /**
  * Adapter for {@link ScalarPanelAbstract scalar panel}s that are implemented
  * using a simple {@link TextField}.
  */
-public abstract class ScalarPanelTextFieldAbstract<T> extends ScalarPanelAbstract {
+public abstract class ScalarPanelTextFieldAbstract<T extends Serializable> extends ScalarPanelAbstract {
 
     private static final long serialVersionUID = 1L;
 
@@ -45,12 +49,15 @@ public abstract class ScalarPanelTextFieldAbstract<T> extends ScalarPanelAbstrac
     private static final String ID_SCALAR_NAME = "scalarName";
     private static final String ID_FEEDBACK = "feedback";
 
-    private static final String ID_SCALAR_IF_COMPACT = "scalarIfCompact";
+    protected static final String ID_SCALAR_IF_COMPACT = "scalarIfCompact";
 
+    protected final Class<T> cls;
+    
     private AbstractTextComponent<T> textField;
 
-    public ScalarPanelTextFieldAbstract(final String id, final ScalarModel scalarModel) {
+    public ScalarPanelTextFieldAbstract(final String id, final ScalarModel scalarModel, final Class<T> cls) {
         super(id, scalarModel);
+        this.cls = cls;
     }
 
     protected AbstractTextComponent<T> getTextField() {
@@ -67,9 +74,22 @@ public abstract class ScalarPanelTextFieldAbstract<T> extends ScalarPanelAbstrac
 
         final FormComponentLabel labelIfRegular = createFormComponentLabel();
         addOrReplace(labelIfRegular);
+        if(getModel().isRequired()) {
+            labelIfRegular.add(new CssClassAppender("mandatory"));
+        }
 
-        addOrReplace(new ComponentFeedbackPanel(ID_FEEDBACK, textField));
+        final String describedAs = getModel().getDescribedAs();
+        if(describedAs != null) {
+            labelIfRegular.add(new AttributeModifier("title", Model.of(describedAs)));
+        }
+        
+        addFeedbackTo(labelIfRegular);
         return labelIfRegular;
+    }
+
+    protected void addFeedbackTo(MarkupContainer markupContainer) {
+        // 6.0.0
+        markupContainer.addOrReplace(new ComponentFeedbackPanel(ID_FEEDBACK, textField));
     }
 
     /**
@@ -82,16 +102,18 @@ public abstract class ScalarPanelTextFieldAbstract<T> extends ScalarPanelAbstrac
 
     protected abstract AbstractTextComponent<T> createTextField();
 
+
     private FormComponentLabel createFormComponentLabel() {
         final AbstractTextComponent<T> textField = getTextField();
         final String name = getModel().getName();
         textField.setLabel(Model.of(name));
-
+        
         final FormComponentLabel scalarNameAndValue = new FormComponentLabel(ID_SCALAR_IF_REGULAR, textField);
-
+        
         scalarNameAndValue.add(textField);
 
-        final Label scalarName = new Label(ID_SCALAR_NAME, getFormat().getLabelCaption(textField));
+        final Label scalarName = new Label(ID_SCALAR_NAME, getRendering().getLabelCaption(textField));
+        
         scalarNameAndValue.add(scalarName);
 
         return scalarNameAndValue;
@@ -99,7 +121,7 @@ public abstract class ScalarPanelTextFieldAbstract<T> extends ScalarPanelAbstrac
 
     protected void addStandardSemantics() {
         setRequiredIfSpecified();
-        setTextFieldSizeIfSpecified();
+        setTextFieldSizeIfSpecified(textField);
     }
 
     private void setRequiredIfSpecified() {
@@ -108,31 +130,31 @@ public abstract class ScalarPanelTextFieldAbstract<T> extends ScalarPanelAbstrac
         textField.setRequired(required);
     }
 
-    private void setTextFieldSizeIfSpecified() {
-        final int size = determineSize();
-        if (size != -1) {
-            textField.add(new AttributeModifier("size", true, new Model<String>("" + size)));
+    protected void setTextFieldSizeIfSpecified(AbstractTextComponent<T> textField) {
+        final Integer size = determineSize();
+        if (size != null) {
+            textField.add(new AttributeModifier("size", Model.of("" + size)));
         }
     }
 
-    private int determineSize() {
-        final ScalarModel scalarModel = getModel();
-        final ObjectSpecification noSpec = scalarModel.getTypeOfSpecification();
-
-        final TypicalLengthFacet typicalLengthFacet = noSpec.getFacet(TypicalLengthFacet.class);
-        if (typicalLengthFacet != null) {
-            return typicalLengthFacet.value();
-        }
-        final MaxLengthFacet maxLengthFacet = noSpec.getFacet(MaxLengthFacet.class);
-        if (maxLengthFacet != null) {
-            return maxLengthFacet.value();
-        }
-        return -1;
+    @SuppressWarnings("unchecked")
+    protected Integer determineSize() {
+        return firstValueOf(getModel(), TypicalLengthFacet.class, MaxLengthFacet.class);
     }
-
+    
+    private Integer firstValueOf(ScalarModel model, Class<? extends SingleIntValueFacet>... facetTypes) {
+        for(Class<? extends SingleIntValueFacet> facetType: facetTypes) {
+        final SingleIntValueFacet facet = model.getFacet(facetType);
+            if (facet != null) {
+                return facet.value();
+            }
+        }
+        return null;
+    }
+    
     /**
      * Mandatory hook method to build the component to render the model when in
-     * {@link Format#COMPACT compact} format.
+     * {@link Rendering#COMPACT compact} format.
      */
     @Override
     protected Component addComponentForCompact() {
@@ -163,7 +185,7 @@ public abstract class ScalarPanelTextFieldAbstract<T> extends ScalarPanelAbstrac
     }
 
     private void setTitleAttribute(final String titleAttribute) {
-        textField.add(new AttributeModifier("title", true, Model.of(titleAttribute)));
+        textField.add(new AttributeModifier("title", Model.of(titleAttribute)));
     }
 
 }

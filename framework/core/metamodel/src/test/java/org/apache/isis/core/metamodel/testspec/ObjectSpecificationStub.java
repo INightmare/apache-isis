@@ -458,20 +458,7 @@ public class ObjectSpecificationStub extends FacetHolderImpl implements ObjectSp
     // /////////////////////////////////////////////////////////////
 
     @Override
-    public void introspectTypeHierarchyAndMembers() {
-    }
-
-    @Override
-    public void updateFromFacetValues() {
-    }
-
-    @Override
     public void markAsService() {
-    }
-
-    @Override
-    public boolean isIntrospected() {
-        return false;
     }
 
     @Override
@@ -484,6 +471,15 @@ public class ObjectSpecificationStub extends FacetHolderImpl implements ObjectSp
         return null;
     }
 
+    @Override
+    public List<ObjectAction> getObjectActions(ActionType type, Contributed contributed, Filter<ObjectAction> filter) {
+        return null;
+    }
+
+    @Override
+    public List<ObjectAction> getObjectActions(List<ActionType> requestedTypes, Contributed contributed, Filter<ObjectAction> filter) {
+        return null;
+    }
 
 
 }

@@ -27,8 +27,7 @@ import java.util.regex.Pattern;
 import com.google.common.collect.Maps;
 
 import org.apache.wicket.Component;
-import org.apache.wicket.PageParameters;
-import org.apache.wicket.markup.html.link.BookmarkablePageLink;
+import org.apache.wicket.request.mapper.parameter.PageParameters;
 
 import org.apache.isis.applib.Identifier;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
@@ -125,27 +124,20 @@ public class ActionModel extends ModelAbstract<ObjectAdapter> {
         return pageParameters;
     }
 
-    private static Mode determineActionMode(final ObjectAction noAction, final ObjectAdapter contextAdapter) {
-        final int parameterCount = noAction.getParameterCount();
-        if (parameterCount == 0) {
-            return Mode.RESULTS;
-        }
-        if (parameterCount > 1) {
-            return Mode.PARAMETERS;
-        }
-        // no need to prompt for contributed actions (ie if have a context
-        // adapter)
-        final ObjectActionParameter actionParam = noAction.getParameters().get(0);
-        return ActionParams.compatibleWith(contextAdapter, actionParam) ? Mode.RESULTS : Mode.PARAMETERS;
+    private static Mode determineActionMode(final ObjectAction objectAction, final ObjectAdapter contextAdapter) {
+        return objectAction.promptForParameters(contextAdapter)?Mode.PARAMETERS:Mode.RESULTS;
     }
+    
 
-
-	private static void addActionParamContextIfPossible(final ObjectAction noAction, final ObjectAdapter contextAdapter, final PageParameters pageParameters) {
+	private static void addActionParamContextIfPossible(final ObjectAction objectAction, final ObjectAdapter contextAdapter, final PageParameters pageParameters) {
         if (contextAdapter == null) {
             return;
         }
+        if(!objectAction.isContributed()) {
+            return;
+        }
         int i = 0;
-        for (final ObjectActionParameter actionParam : noAction.getParameters()) {
+        for (final ObjectActionParameter actionParam : objectAction.getParameters()) {
             if (ActionParams.compatibleWith(contextAdapter, actionParam)) {
                 final String oidKeyValue = "" + i + "=" + contextAdapter.getOid().enString(getOidMarshaller());
                 PageParameterNames.ACTION_PARAM_CONTEXT.addTo(pageParameters, oidKeyValue);
@@ -348,8 +340,12 @@ public class ActionModel extends ModelAbstract<ObjectAdapter> {
         return actionMemento;
     }
 
-    @Override
-    public ObjectAdapter getObject() {
+//    @Override
+//    public ObjectAdapter getObject() {
+//        return reExecute();
+//    }
+
+    private ObjectAdapter reExecute() {
         detach(); // force re-execute
         final ObjectAdapter result = super.getObject();
         arguments.clear();
@@ -358,8 +354,16 @@ public class ActionModel extends ModelAbstract<ObjectAdapter> {
 
     @Override
     protected ObjectAdapter load() {
+        
+        // from getObject()/reExecute
+        detach(); // force re-execute
+        
         final ObjectAdapter results = executeAction();
         this.actionMode = Mode.RESULTS;
+        
+        // from getObject()/reExecute
+        arguments.clear();
+        
         return results;
     }
 
