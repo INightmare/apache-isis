@@ -19,11 +19,12 @@
 
 package org.apache.isis.viewer.wicket.viewer.registries.components;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+
+import javax.inject.Inject;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
@@ -38,23 +39,21 @@ import org.apache.wicket.model.IModel;
 import org.apache.isis.viewer.wicket.ui.ComponentFactory;
 import org.apache.isis.viewer.wicket.ui.ComponentFactory.ApplicationAdvice;
 import org.apache.isis.viewer.wicket.ui.ComponentType;
-import org.apache.isis.viewer.wicket.ui.app.registry.ComponentFactoryList;
+import org.apache.isis.viewer.wicket.ui.app.registry.ComponentFactoryRegistrar;
+import org.apache.isis.viewer.wicket.ui.app.registry.ComponentFactoryRegistrar.ComponentFactoryList;
 import org.apache.isis.viewer.wicket.ui.app.registry.ComponentFactoryRegistry;
 
 /**
  * Implementation of {@link ComponentFactoryRegistry} that delegates to a
- * provided {@link ComponentFactoryList}.
+ * provided {@link ComponentFactoryRegistrar}.
  */
 @Singleton
 public class ComponentFactoryRegistryDefault implements ComponentFactoryRegistry {
 
     private final Multimap<ComponentType, ComponentFactory> componentFactoriesByType;
 
-    public ComponentFactoryRegistryDefault() {
-        this(new ComponentFactoryListDefault());
-    }
-
-    public ComponentFactoryRegistryDefault(final ComponentFactoryList componentFactoryList) {
+    @Inject
+    public ComponentFactoryRegistryDefault(final ComponentFactoryRegistrar componentFactoryList) {
         componentFactoriesByType = Multimaps.newListMultimap(new HashMap<ComponentType, Collection<ComponentFactory>>(), new Supplier<List<ComponentFactory>>() {
             @Override
             public List<ComponentFactory> get() {
@@ -72,9 +71,10 @@ public class ComponentFactoryRegistryDefault implements ComponentFactoryRegistry
     /**
      * Registers the provided set of component factories.
      */
-    protected void registerComponentFactories(final ComponentFactoryList componentFactoryList) {
-        final List<ComponentFactory> componentFactories = Lists.newArrayList();
-        componentFactoryList.addComponentFactories(componentFactories);
+    protected void registerComponentFactories(final ComponentFactoryRegistrar componentFactoryRegistrar) {
+        
+        final ComponentFactoryList componentFactories = new ComponentFactoryList();
+        componentFactoryRegistrar.addComponentFactories(componentFactories);
 
         for (final ComponentFactory componentFactory : componentFactories) {
             registerComponentFactory(componentFactory);
@@ -131,7 +131,7 @@ public class ComponentFactoryRegistryDefault implements ComponentFactoryRegistry
     @Override
     public List<ComponentFactory> findComponentFactories(final ComponentType componentType, final IModel<?> model) {
         final Collection<ComponentFactory> componentFactoryList = componentFactoriesByType.get(componentType);
-        final ArrayList<ComponentFactory> matching = new ArrayList<ComponentFactory>();
+        final List<ComponentFactory> matching = Lists.newArrayList();
         for (final ComponentFactory componentFactory : componentFactoryList) {
             final ApplicationAdvice appliesTo = componentFactory.appliesTo(componentType, model);
             if (appliesTo.applies()) {
@@ -140,6 +140,10 @@ public class ComponentFactoryRegistryDefault implements ComponentFactoryRegistry
             if (appliesTo.exclusively()) {
                 break;
             }
+        }
+        if (matching.isEmpty()) {
+            // will just be one
+            matching.addAll(componentFactoriesByType.get(ComponentType.UNKNOWN));
         }
         return matching;
     }

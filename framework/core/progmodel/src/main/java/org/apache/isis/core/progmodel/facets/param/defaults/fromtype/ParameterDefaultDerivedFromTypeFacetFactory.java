@@ -21,12 +21,12 @@ package org.apache.isis.core.progmodel.facets.param.defaults.fromtype;
 
 import org.apache.isis.core.metamodel.facetapi.FacetUtil;
 import org.apache.isis.core.metamodel.facetapi.FeatureType;
-import org.apache.isis.core.metamodel.facets.AnnotationBasedFacetFactoryAbstract;
+import org.apache.isis.core.metamodel.facets.FacetFactoryAbstract;
 import org.apache.isis.core.metamodel.facets.actions.defaults.ActionDefaultsFacet;
 import org.apache.isis.core.metamodel.spec.ObjectSpecification;
 import org.apache.isis.core.progmodel.facets.object.defaults.DefaultedFacet;
 
-public class ParameterDefaultDerivedFromTypeFacetFactory extends AnnotationBasedFacetFactoryAbstract {
+public class ParameterDefaultDerivedFromTypeFacetFactory extends FacetFactoryAbstract {
 
     public ParameterDefaultDerivedFromTypeFacetFactory() {
         super(FeatureType.PARAMETERS_ONLY);
@@ -58,7 +58,7 @@ public class ParameterDefaultDerivedFromTypeFacetFactory extends AnnotationBased
     }
 
     private DefaultedFacet getDefaultedFacet(final Class<?> paramType) {
-        final ObjectSpecification paramTypeSpec = getSpecificationLookup().loadSpecification(paramType);
+        final ObjectSpecification paramTypeSpec = getSpecificationLoader().loadSpecification(paramType);
         return paramTypeSpec.getFacet(DefaultedFacet.class);
     }
 

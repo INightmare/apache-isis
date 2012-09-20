@@ -36,10 +36,10 @@ import org.apache.isis.viewer.wicket.model.util.Strings;
 public enum ComponentType {
 
     
-//    /**
-//     * About page text.
-//     */
-//    ABOUT,
+    /**
+     * About page text.
+     */
+    ABOUT,
     /**
      * Welcome page text.
      */
@@ -56,6 +56,10 @@ public enum ComponentType {
      * A single domain entity.
      */
     ENTITY,
+    /**
+     * Icon and title for a single entity.
+     */
+    ENTITY_ICON_AND_TITLE,
     /**
      * Title, icon and action list for a single entity.
      */
@@ -132,7 +136,13 @@ public enum ComponentType {
     /**
      * A void result from an action.
      */
-    VOID_RETURN;
+    VOID_RETURN, 
+    /**
+     * Place holder for a component used to represent an unknown model;
+     * not used for matching, since the {@link ComponentFactory} implementation
+     * acts as a fallback whenever a more suitable factory cannot be located.
+     */
+    UNKNOWN;
 
     /**
      * Returns the {@link #name()} formatted as

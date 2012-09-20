@@ -22,23 +22,17 @@ package org.apache.isis.viewer.wicket.ui.components.scalars.jdkmath;
 import java.math.BigDecimal;
 
 import org.apache.isis.viewer.wicket.model.models.ScalarModel;
-import org.apache.isis.viewer.wicket.ui.components.scalars.ScalarPanelTextFieldParseableAbstract;
+import org.apache.isis.viewer.wicket.ui.components.scalars.ScalarPanelTextFieldNumeric;
 
 /**
  * Panel for rendering scalars of type {@link BigDecimal}.
  */
-public class JavaMathBigDecimalPanel extends ScalarPanelTextFieldParseableAbstract {
+public class JavaMathBigDecimalPanel extends ScalarPanelTextFieldNumeric<BigDecimal> {
 
     private static final long serialVersionUID = 1L;
-    private static final String ID_SCALAR_VALUE = "scalarValue";
 
     public JavaMathBigDecimalPanel(final String id, final ScalarModel scalarModel) {
-        super(id, ID_SCALAR_VALUE, scalarModel);
-    }
-
-    @Override
-    protected void addSemantics() {
-        super.addSemantics();
+        super(id, scalarModel, BigDecimal.class);
     }
 
 }

@@ -26,6 +26,7 @@ import java.util.List;
 import com.google.common.base.Function;
 
 import org.apache.isis.applib.annotation.ObjectType;
+import org.apache.isis.applib.filter.Filter;
 import org.apache.isis.applib.profiles.Localization;
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
@@ -49,7 +50,9 @@ import org.apache.isis.core.metamodel.facets.object.value.ValueFacet;
 import org.apache.isis.core.metamodel.interactions.InteractionContext;
 import org.apache.isis.core.metamodel.interactions.ObjectTitleContext;
 import org.apache.isis.core.metamodel.interactions.ObjectValidityContext;
+import org.apache.isis.core.metamodel.spec.feature.ObjectAction;
 import org.apache.isis.core.metamodel.spec.feature.ObjectActionContainer;
+import org.apache.isis.core.metamodel.spec.feature.ObjectActionContainer.Contributed;
 import org.apache.isis.core.metamodel.spec.feature.ObjectAssociationContainer;
 import org.apache.isis.core.metamodel.specloader.classsubstitutor.ClassSubstitutor;
 
@@ -322,30 +325,7 @@ public interface ObjectSpecification extends Specification, ObjectActionContaine
 
     public void markAsService();
 
-    // //////////////////////////////////////////////////////////////
-    // Introspection
-    // //////////////////////////////////////////////////////////////
 
-    /**
-     * Builds actions and associations.
-     * 
-     * <p>
-     * Is called prior to running the <tt>FacetDecoratorSet</tt>
-     */
-    public void introspectTypeHierarchyAndMembers();
 
-    /**
-     * Is called after to running the <tt>FacetDecoratorSet</tt>.
-     * 
-     * <p>
-     * TODO: it's possible that this could be merged with
-     * {@link #introspectTypeHierarchyAndMembers()}; need to check though,
-     * because this would cause facets to be decorated at the end of
-     * introspection, rather than midway as is currently.
-     * 
-     */
-    public void updateFromFacetValues();
-
-    public boolean isIntrospected();
 
 }

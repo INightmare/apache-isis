@@ -69,7 +69,7 @@ public class ResourceStreamSourceChainOfResponsibility extends ResourceStreamSou
 
     @Override
     public String getName() {
-        return "[" + resourceStreamNames() + "]";
+        return "chain [" + resourceStreamNames() + "]";
     }
 
     private String resourceStreamNames() {

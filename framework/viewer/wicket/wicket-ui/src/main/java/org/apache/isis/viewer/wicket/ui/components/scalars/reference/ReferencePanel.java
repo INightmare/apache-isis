@@ -19,6 +19,7 @@
 
 package org.apache.isis.viewer.wicket.ui.components.scalars.reference;
 
+import org.apache.wicket.AttributeModifier;
 import org.apache.wicket.Component;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.FormComponentLabel;
@@ -29,10 +30,12 @@ import org.apache.wicket.validation.IValidator;
 import org.apache.wicket.validation.ValidationError;
 
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
+import org.apache.isis.viewer.wicket.model.models.EntityModel;
 import org.apache.isis.viewer.wicket.model.models.ScalarModel;
 import org.apache.isis.viewer.wicket.ui.ComponentType;
 import org.apache.isis.viewer.wicket.ui.components.scalars.ScalarPanelAbstract;
-import org.apache.isis.viewer.wicket.ui.components.widgets.entitylink.EntityLink;
+import org.apache.isis.viewer.wicket.ui.components.widgets.entitylink.EntityLinkAbstract;
+import org.apache.isis.viewer.wicket.ui.util.CssClassAppender;
 
 /**
  * Panel for rendering scalars which of are of reference type (as opposed to
@@ -48,7 +51,7 @@ public class ReferencePanel extends ScalarPanelAbstract {
 
     private static final String ID_SCALAR_IF_COMPACT = "scalarIfCompact";
 
-    private EntityLink entityLink;
+    private EntityLinkAbstract entityLink;
 
     public ReferencePanel(final String id, final ScalarModel scalarModel) {
         super(id, scalarModel);
@@ -58,46 +61,56 @@ public class ReferencePanel extends ScalarPanelAbstract {
     protected void onBeforeRenderWhenEnabled() {
         super.onBeforeRenderWhenEnabled();
         entityLink.setEnabled(true);
-        entityLink.syncFindUsingVisibility();
+        entityLink.syncVisibilityAndUsability();
     }
 
     @Override
     protected void onBeforeRenderWhenViewMode() {
         super.onBeforeRenderWhenViewMode();
-        entityLink.setEnabled(false);
-        entityLink.syncFindUsingVisibility();
+        entityLink.setEnabled(true);
+        entityLink.syncVisibilityAndUsability();
     }
 
     @Override
     protected void onBeforeRenderWhenDisabled(final String disableReason) {
         super.onBeforeRenderWhenDisabled(disableReason);
-        entityLink.setEnabled(false);
-        entityLink.syncFindUsingVisibility();
+        final EntityModel entityLinkModel = (EntityModel) entityLink.getModel();
+        entityLinkModel.toViewMode();
+        
+        entityLink.syncVisibilityAndUsability();
     }
 
     @Override
     protected FormComponentLabel addComponentForRegular() {
         final ScalarModel scalarModel = getModel();
         final String name = scalarModel.getName();
-
-        entityLink = (EntityLink) getComponentFactoryRegistry().createComponent(ComponentType.ENTITY_LINK, getModel());
-
+        
+        entityLink = (EntityLinkAbstract) getComponentFactoryRegistry().createComponent(ComponentType.ENTITY_LINK, getModel());
+        
         entityLink.setOutputMarkupId(true);
         entityLink.setLabel(Model.of(name));
-
+        
         final FormComponentLabel labelIfRegular = new FormComponentLabel(ID_SCALAR_IF_REGULAR, entityLink);
-
         labelIfRegular.add(entityLink);
-        final Label scalarName = new Label(ID_SCALAR_NAME, getFormat().getLabelCaption(entityLink));
+        
+        final String describedAs = getModel().getDescribedAs();
+        if(describedAs != null) {
+            labelIfRegular.add(new AttributeModifier("title", Model.of(describedAs)));
+        }
+        
+        final Label scalarName = new Label(ID_SCALAR_NAME, getRendering().getLabelCaption(entityLink));
         labelIfRegular.add(scalarName);
-
+        
         addOrReplace(labelIfRegular);
-
+        
         addOrReplace(new ComponentFeedbackPanel(ID_FEEDBACK, entityLink));
-
+        
         addStandardSemantics();
         addSemantics();
 
+        if(getModel().isRequired()) {
+            labelIfRegular.add(new CssClassAppender("mandatory"));
+        }
         return labelIfRegular;
     }
 
@@ -138,13 +151,26 @@ public class ReferencePanel extends ScalarPanelAbstract {
 
     /**
      * Mandatory hook method to build the component to render the model when in
-     * {@link Format#COMPACT compact} format.
+     * {@link Rendering#COMPACT compact} format.
      */
     @Override
     protected Component addComponentForCompact() {
-        final Label labelIfCompact = new Label(ID_SCALAR_IF_COMPACT, getModel().getObjectAsString());
+
+        final ScalarModel scalarModel = getModel();
+        final String name = scalarModel.getName();
+        
+        entityLink = (EntityLinkAbstract) getComponentFactoryRegistry().createComponent(ComponentType.ENTITY_LINK, getModel());
+        
+        entityLink.setOutputMarkupId(true);
+        entityLink.setLabel(Model.of(name));
+        
+        final FormComponentLabel labelIfCompact = new FormComponentLabel(ID_SCALAR_IF_COMPACT, entityLink);
+        labelIfCompact.add(entityLink);
+        
         addOrReplace(labelIfCompact);
+        
+        addOrReplace(new ComponentFeedbackPanel(ID_FEEDBACK, entityLink));
+        
         return labelIfCompact;
     }
-
 }

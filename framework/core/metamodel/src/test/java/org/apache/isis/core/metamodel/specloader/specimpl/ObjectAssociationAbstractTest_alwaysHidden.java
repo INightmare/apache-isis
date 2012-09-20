@@ -73,7 +73,7 @@ public class ObjectAssociationAbstractTest_alwaysHidden {
 
     @Before
     public void setup() {
-        facetedMethod = FacetedMethod.createProperty(Customer.class, "firstName");
+        facetedMethod = FacetedMethod.createForProperty(Customer.class, "firstName");
         
         objectAssociation = new ObjectAssociationAbstract(facetedMethod, FeatureType.PROPERTY, objectSpecification, new ObjectMemberContext(null, null, null, null, null)) {
 
@@ -158,7 +158,7 @@ public class ObjectAssociationAbstractTest_alwaysHidden {
         context.checking(new Expectations() {
             {
                 allowing(facet).where();
-                will(returnValue(Where.OBJECT_FORM));
+                will(returnValue(Where.OBJECT_FORMS));
             }
         });
         facetedMethod.addFacet(facet);

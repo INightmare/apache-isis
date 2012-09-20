@@ -18,10 +18,8 @@
  */
 package org.apache.isis.runtimes.dflt.objectstores.sql.common;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Properties;
@@ -32,7 +30,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 
-import org.apache.isis.core.testsupport.files.Files;
 import org.apache.isis.core.testsupport.jmock.JUnitRuleMockery2;
 import org.apache.isis.core.testsupport.jmock.JUnitRuleMockery2.Mode;
 import org.apache.isis.runtimes.dflt.objectstores.sql.common.SqlIntegrationTestFixtures.State;
@@ -40,11 +37,18 @@ import org.apache.isis.tck.dom.poly.ReferencingPolyTypesEntity;
 import org.apache.isis.tck.dom.sqlos.SqlDomainObjectRepository;
 import org.apache.isis.tck.dom.sqlos.data.SqlDataClass;
 
+/**
+ * @author Kevin kevin@kmz.co.za
+ * 
+ *         This common test class is used by all sql objectstore tests to manage the Isis framework.
+ * 
+ * @version $Rev$ $Date$
+ */
 public abstract class SqlIntegrationTestCommonBase {
 
     @Rule
     public JUnitRuleMockery2 context = JUnitRuleMockery2.createFor(Mode.INTERFACES_AND_CLASSES);
-    
+
     protected SqlIntegrationTestFixtures getSqlIntegrationTestFixtures() {
         return SqlIntegrationTestFixtures.getInstance();
     }
@@ -67,10 +71,7 @@ public abstract class SqlIntegrationTestCommonBase {
         return null;
     }
 
-    
-
     public abstract String getPropertiesFilename();
-
 
     protected void setFixtureInitializationStateIfNot(State state, String persistenceMechanism) {
         if (!persistenceMechanismIs(persistenceMechanism)) {
@@ -87,26 +88,26 @@ public abstract class SqlIntegrationTestCommonBase {
     protected void setFixtureInitializationState(final State state) {
         getSqlIntegrationTestFixtures().setState(state);
     }
-    
+
     protected boolean persistenceMechanismIs(final String persistenceMechanism) {
         return getProperties().getProperty("isis.persistor").equals(persistenceMechanism);
     }
 
-
-    
     /**
-     * This method can be used to do any DB specific actions the first time the
-     * test framework is setup. e.g. In the XML test, it must delete all XML
-     * files in the data store directory.
+     * This method can be used to do any DB specific actions the first time the test framework is setup. e.g. In the XML
+     * test, it must delete all XML files in the data store directory.
      */
     public void resetPersistenceStoreDirectlyIfRequired() {
     }
 
-    
-    
-    ////////////////////////////////////////////////////////////////////////////////
+    protected void testSetup() {
+        resetPersistenceStoreDirectlyIfRequired();
+        getSqlIntegrationTestFixtures().setState(State.INITIALIZE);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
     // before, after
-    ////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////
 
     @Before
     public void setUpSystem() throws Exception {
@@ -115,7 +116,7 @@ public abstract class SqlIntegrationTestCommonBase {
         if (!getSqlIntegrationTestFixtures().getState().isInitialize()) {
             return;
         }
-        
+
         final Properties properties = getProperties();
         if (properties == null) {
             getSqlIntegrationTestFixtures().initSystem("src/test/config", getPropertiesFilename());
@@ -128,7 +129,6 @@ public abstract class SqlIntegrationTestCommonBase {
             getSqlIntegrationTestFixtures().sqlExecute(sqlSetupString);
         }
     }
-    
 
     /**
      * optional hook
@@ -140,22 +140,21 @@ public abstract class SqlIntegrationTestCommonBase {
     @Before
     public void setUpFactory() throws Exception {
         factory = getSqlIntegrationTestFixtures().getSqlDataClassFactory();
-        
+
         // may have been setup by previous test
         sqlDataClass = getSqlIntegrationTestFixtures().getSqlDataClass();
         referencingPolyTypesEntity = getSqlIntegrationTestFixtures().getPolyTestClass();
     }
 
-
-    ////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////
     // after
-    ////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////
 
     @After
     public void tearDown() throws Exception {
         if (!getSqlIntegrationTestFixtures().getState().isInitialize()) {
             return;
-        } 
+        }
         final String sqlTeardownString = getSqlTeardownString();
         if (sqlTeardownString != null) {
             try {
@@ -173,7 +172,5 @@ public abstract class SqlIntegrationTestCommonBase {
     protected String getSqlTeardownString() {
         return null;
     }
-
-
 
 }

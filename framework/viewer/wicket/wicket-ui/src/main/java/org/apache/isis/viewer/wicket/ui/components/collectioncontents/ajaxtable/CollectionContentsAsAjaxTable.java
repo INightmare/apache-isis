@@ -60,22 +60,22 @@ public class CollectionContentsAsAjaxTable extends PanelAbstract<EntityCollectio
     private void buildGui() {
         final EntityCollectionModel model = getModel();
 
-        final List<IColumn<ObjectAdapter>> columns = Lists.newArrayList();
+        final List<IColumn<ObjectAdapter,String>> columns = Lists.newArrayList();
 
         addTitleColumn(columns);
         addPropertyColumnsIfRequired(columns);
         addSelectedButtonIfRequired(columns);
 
-        final SortableDataProvider<ObjectAdapter> dataProvider = new CollectionContentsSortableDataProvider(model);
-        final AjaxFallbackDefaultDataTable<ObjectAdapter> dataTable = new AjaxFallbackDefaultDataTable<ObjectAdapter>("table", columns, dataProvider, 8);
+        final SortableDataProvider<ObjectAdapter,String> dataProvider = new CollectionContentsSortableDataProvider(model);
+        final AjaxFallbackDefaultDataTable<ObjectAdapter,String> dataTable = new AjaxFallbackDefaultDataTable<ObjectAdapter,String>("table", columns, dataProvider, model.getPageSize());
         add(dataTable);
     }
 
-    private void addTitleColumn(final List<IColumn<ObjectAdapter>> columns) {
+    private void addTitleColumn(final List<IColumn<ObjectAdapter,String>> columns) {
         columns.add(new ObjectAdapterTitleColumn());
     }
 
-    private void addPropertyColumnsIfRequired(final List<IColumn<ObjectAdapter>> columns) {
+    private void addPropertyColumnsIfRequired(final List<IColumn<ObjectAdapter,String>> columns) {
         final ObjectSpecification typeOfSpec = getModel().getTypeOfSpecification();
         if (getModel().hasSelectionHandler()) {
             return;
@@ -84,7 +84,7 @@ public class CollectionContentsAsAjaxTable extends PanelAbstract<EntityCollectio
         @SuppressWarnings("unchecked")
         final Filter<ObjectAssociation> filter = Filters.and(
                 ObjectAssociationFilters.PROPERTIES, 
-                ObjectAssociationFilters.staticallyVisible(getModel().isParented()? Where.PARENTED_TABLE: Where.STANDALONE_TABLE));
+                ObjectAssociationFilters.staticallyVisible(getModel().isParented()? Where.PARENTED_TABLES: Where.STANDALONE_TABLES));
         final List<? extends ObjectAssociation> propertyList = typeOfSpec.getAssociations(filter);
         for (final ObjectAssociation property : propertyList) {
             final ColumnAbstract<ObjectAdapter> nopc = createObjectAdapterPropertyColumn(property);
@@ -92,7 +92,7 @@ public class CollectionContentsAsAjaxTable extends PanelAbstract<EntityCollectio
         }
     }
 
-    private void addSelectedButtonIfRequired(final List<IColumn<ObjectAdapter>> columns) {
+    private void addSelectedButtonIfRequired(final List<IColumn<ObjectAdapter,String>> columns) {
         if (!getModel().hasSelectionHandler()) {
             return;
         }

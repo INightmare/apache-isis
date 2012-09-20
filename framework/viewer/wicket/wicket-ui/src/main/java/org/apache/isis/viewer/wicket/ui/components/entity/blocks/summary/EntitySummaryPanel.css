@@ -24,18 +24,24 @@ div.entitySummary {
 }
 
 div.entitySummary .iconAndTitle {
+	float: left;
     padding:1em;
 }
 
 div.entitySummary .actions {
+	float: left;
     padding:1em;
+    
+	padding-top: 2.0em; 
+	padding-left: 50px;
 }
 
 .entitySummary .entityImage {
+	width: 32px;
+	height: 32px;
 }
 
 .entitySummary .entityTitle {
 	font-size: x-large;
 }
-
 
