@@ -38,9 +38,6 @@ public abstract class TimeStampValueSemanticsProviderAbstract<T> extends ValueSe
     private static final Object DEFAULT_VALUE = null; // no default
     private static final int TYPICAL_LENGTH = 12;
 
-    private static final boolean IMMUTABLE = false;
-    private static final boolean EQUAL_BY_CONTENT = false;
-
     protected static void initFormats(final Map<String, DateFormat> formats) {
         formats.put(ISO_ENCODING_FORMAT, createDateEncodingFormat("yyyyMMdd'T'HHmmssSSS")); 
         formats.put("short", DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG));
@@ -48,18 +45,13 @@ public abstract class TimeStampValueSemanticsProviderAbstract<T> extends ValueSe
 
     @SuppressWarnings("unchecked")
     public TimeStampValueSemanticsProviderAbstract(final FacetHolder holder, final Class<T> adaptedClass, final IsisConfiguration configuration, final ValueSemanticsProviderContext context) {
-        super("timestamp", holder, adaptedClass, TYPICAL_LENGTH, IMMUTABLE, EQUAL_BY_CONTENT, (T) DEFAULT_VALUE, configuration, context);
+        super("timestamp", holder, adaptedClass, TYPICAL_LENGTH, Immutability.NOT_IMMUTABLE, EqualByContent.NOT_HONOURED, (T) DEFAULT_VALUE, configuration, context);
         final String formatRequired = configuration.getString(ConfigurationConstants.ROOT + "value.format.timestamp");
         if (formatRequired == null) {
             format = formats().get(defaultFormat());
         } else {
             setMask(formatRequired);
         }
-    }
-
-    @Override
-    public int getLevel() {
-        return TIMESTAMP;
     }
 
     @Override

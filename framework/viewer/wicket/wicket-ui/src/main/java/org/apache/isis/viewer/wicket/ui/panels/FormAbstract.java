@@ -21,6 +21,17 @@ package org.apache.isis.viewer.wicket.ui.panels;
 
 import java.util.List;
 
+import javax.inject.Inject;
+
+import org.apache.wicket.markup.head.CssHeaderItem;
+import org.apache.wicket.markup.head.IHeaderResponse;
+import org.apache.wicket.markup.html.IHeaderContributor;
+import org.apache.wicket.markup.html.form.Form;
+import org.apache.wicket.markup.html.form.IFormSubmitter;
+import org.apache.wicket.markup.html.form.IFormSubmittingComponent;
+import org.apache.wicket.model.IModel;
+import org.apache.wicket.request.resource.CssResourceReference;
+
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.commons.authentication.AuthenticationSessionProvider;
 import org.apache.isis.core.commons.authentication.AuthenticationSessionProviderAware;
@@ -32,11 +43,6 @@ import org.apache.isis.viewer.wicket.ui.app.registry.ComponentFactoryRegistry;
 import org.apache.isis.viewer.wicket.ui.app.registry.ComponentFactoryRegistryAccessor;
 import org.apache.isis.viewer.wicket.ui.pages.PageClassRegistry;
 import org.apache.isis.viewer.wicket.ui.pages.PageClassRegistryAccessor;
-import org.apache.wicket.ResourceReference;
-import org.apache.wicket.markup.html.IHeaderContributor;
-import org.apache.wicket.markup.html.IHeaderResponse;
-import org.apache.wicket.markup.html.form.Form;
-import org.apache.wicket.model.IModel;
 
 public abstract class FormAbstract<T> extends Form<T> implements IHeaderContributor, ComponentFactoryRegistryAccessor, PageClassRegistryAccessor, AuthenticationSessionProvider, PersistenceSessionProvider {
 
@@ -69,16 +75,36 @@ public abstract class FormAbstract<T> extends Form<T> implements IHeaderContribu
      */
     protected void renderHead(final IHeaderResponse response, final Class<?> cls) {
         final String url = cls.getSimpleName() + ".css";
-        response.renderCSSReference(new ResourceReference(cls, url));
+        //response.renderCSSReference(new PackageResourceReference(cls, url));
+        response.render(CssHeaderItem.forReference(new CssResourceReference(cls, url)));
     }
+
+
+    // ///////////////////////////////////////////////////////////////////
+    // process() override
+    // ///////////////////////////////////////////////////////////////////
+
+    @Override
+    public void process(IFormSubmitter submittingComponent) {
+        if(submittingComponent instanceof IFormSubmitterWithPreSubmitHook) {
+            IFormSubmitterWithPreSubmitHook componentWithPreSubmitHook = (IFormSubmitterWithPreSubmitHook) submittingComponent;
+            componentWithPreSubmitHook.preSubmit();
+        }
+        super.process(submittingComponent);
+    }
+    
 
     // ///////////////////////////////////////////////////////////////////
     // Convenience
     // ///////////////////////////////////////////////////////////////////
 
+    @Inject
+    private ComponentFactoryRegistry componentFactoryRegistry;
+    
     @Override
     public ComponentFactoryRegistry getComponentFactoryRegistry() {
-        return ((ComponentFactoryRegistryAccessor) getApplication()).getComponentFactoryRegistry();
+        //return ((ComponentFactoryRegistryAccessor) getApplication()).getComponentFactoryRegistry();
+        return componentFactoryRegistry;
     }
 
     @Override

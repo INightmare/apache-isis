@@ -48,8 +48,6 @@ public class MoneyValueSemanticsProvider extends ValueSemanticsProviderAndFacetA
     private static final NumberFormat DEFAULT_CURRENCY_FORMAT;
     private static final String LOCAL_CURRENCY_CODE;
     private static final int TYPICAL_LENGTH = 18;
-    private static final boolean IMMUTABLE = true;
-    private static final boolean EQUAL_BY_CONTENT = true;
     private static final Money DEFAULT_VALUE = null; // no default
 
     private final String defaultCurrencyCode;
@@ -83,7 +81,7 @@ public class MoneyValueSemanticsProvider extends ValueSemanticsProviderAndFacetA
     }
 
     public MoneyValueSemanticsProvider(final FacetHolder holder, final IsisConfiguration configuration, final ValueSemanticsProviderContext context) {
-        super(type(), holder, Money.class, TYPICAL_LENGTH, IMMUTABLE, EQUAL_BY_CONTENT, DEFAULT_VALUE, configuration, context);
+        super(type(), holder, Money.class, TYPICAL_LENGTH, Immutability.IMMUTABLE, EqualByContent.HONOURED, DEFAULT_VALUE, configuration, context);
 
         final String property = ConfigurationConstants.ROOT + "value.money.currency";
         defaultCurrencyCode = configuration.getString(property, LOCAL_CURRENCY_CODE);

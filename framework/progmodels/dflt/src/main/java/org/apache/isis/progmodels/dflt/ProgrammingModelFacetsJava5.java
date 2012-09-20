@@ -22,16 +22,16 @@ package org.apache.isis.progmodels.dflt;
 import org.apache.isis.core.metamodel.progmodel.ProgrammingModelAbstract;
 import org.apache.isis.core.progmodel.facets.actions.debug.annotation.DebugAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.defaults.method.ActionDefaultsFacetFactory;
-import org.apache.isis.core.progmodel.facets.actions.executed.annotation.ExecutedAnnotationFacetFactory;
-import org.apache.isis.core.progmodel.facets.actions.executed.prefix.ExecutedViaNamingConventionFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.exploration.annotation.ExplorationAnnotationFacetFactory;
-import org.apache.isis.core.progmodel.facets.actions.idempotent.IdempotentAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.invoke.ActionInvocationFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.notcontributed.annotation.NotContributedAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.notinservicemenu.annotation.NotInServiceMenuAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.notinservicemenu.method.NotInServiceMenuMethodFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.prototype.annotation.PrototypeAnnotationFacetFactory;
-import org.apache.isis.core.progmodel.facets.actions.queryonly.QueryOnlyAnnotationFacetFactory;
+import org.apache.isis.core.progmodel.facets.actions.semantics.ActionSemanticsAnnotationFacetFactory;
+import org.apache.isis.core.progmodel.facets.actions.semantics.ActionSemanticsFallbackFacetFactory;
+import org.apache.isis.core.progmodel.facets.actions.semantics.IdempotentAnnotationFacetFactory;
+import org.apache.isis.core.progmodel.facets.actions.semantics.QueryOnlyAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.typeof.annotation.TypeOfAnnotationForActionsFacetFactory;
 import org.apache.isis.core.progmodel.facets.actions.validate.method.ActionValidationFacetViaValidateMethodFacetFactory;
 import org.apache.isis.core.progmodel.facets.collections.accessor.CollectionAccessorFacetFactory;
@@ -43,20 +43,22 @@ import org.apache.isis.core.progmodel.facets.collections.modify.CollectionAddRem
 import org.apache.isis.core.progmodel.facets.collections.notpersisted.annotation.NotPersistedAnnotationForCollectionFacetFactory;
 import org.apache.isis.core.progmodel.facets.collections.typeof.TypeOfAnnotationForCollectionsFacetFactory;
 import org.apache.isis.core.progmodel.facets.fallback.FallbackFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.commonlyused.CommonlyUsedAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.members.describedas.annotation.DescribedAsAnnotationOnMemberFacetFactory;
 import org.apache.isis.core.progmodel.facets.members.describedas.staticmethod.DescribedAsFacetViaDescriptionMethodFacetFactory;
-import org.apache.isis.core.progmodel.facets.members.disable.annotation.DisabledAnnotationFacetFactory;
-import org.apache.isis.core.progmodel.facets.members.disable.forsession.DisabledFacetViaDisableForSessionMethodFacetFactory;
-import org.apache.isis.core.progmodel.facets.members.disable.method.DisabledFacetViaDisableMethodFacetFactory;
-import org.apache.isis.core.progmodel.facets.members.disable.staticmethod.DisabledFacetViaProtectMethodFacetFactory;
-import org.apache.isis.core.progmodel.facets.members.hide.annotation.HiddenAnnotationForMemberFacetFactory;
-import org.apache.isis.core.progmodel.facets.members.hide.forsession.HiddenFacetViaHideForSessionMethodFacetFactory;
-import org.apache.isis.core.progmodel.facets.members.hide.method.HiddenFacetViaHideMethodFacetFactory;
-import org.apache.isis.core.progmodel.facets.members.hide.staticmethod.HiddenFacetViaAlwaysHideMethodFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.disabled.annotation.DisabledAnnotationFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.disabled.forsession.DisabledFacetViaDisableForSessionMethodFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.disabled.method.DisabledFacetViaDisableMethodFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.disabled.staticmethod.DisabledFacetViaProtectMethodFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.hidden.annotation.HiddenAnnotationForMemberFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.hidden.forsession.HiddenFacetViaHideForSessionMethodFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.hidden.method.HiddenFacetViaHideMethodFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.hidden.staticmethod.HiddenFacetViaAlwaysHideMethodFacetFactory;
 import org.apache.isis.core.progmodel.facets.members.named.annotation.NamedAnnotationOnMemberFacetFactory;
 import org.apache.isis.core.progmodel.facets.members.named.staticmethod.NamedFacetViaNameMethodFacetFactory;
 import org.apache.isis.core.progmodel.facets.members.order.MemberOrderAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.aggregated.annotation.AggregatedAnnotationFacetFactory;
+import org.apache.isis.core.progmodel.facets.object.autocomplete.annotation.AutoCompleteAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.bounded.annotation.BoundedAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.bounded.markerifc.BoundedMarkerInterfaceFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.callbacks.create.CreatedCallbackFacetFactory;
@@ -87,7 +89,7 @@ import org.apache.isis.core.progmodel.facets.object.ignore.javalang.RemoveSuperc
 import org.apache.isis.core.progmodel.facets.object.ignore.javalang.SyntheticMethodFilteringFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.ignore.jdo.RemoveJdoEnhancementTypesFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.immutable.annotation.ImmutableAnnotationFacetFactory;
-import org.apache.isis.core.progmodel.facets.object.immutable.markerifc.ImmutableMarkerInterfacesFacetFactory;
+import org.apache.isis.core.progmodel.facets.object.immutable.markerifc.ImmutableMarkerInterfaceFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.mask.annotation.MaskAnnotationForTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.maxlen.annotation.MaxLengthAnnotationForTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.multiline.annotation.MultiLineAnnotationOnTypeFacetFactory;
@@ -103,7 +105,6 @@ import org.apache.isis.core.progmodel.facets.object.parseable.ParseableFacetFact
 import org.apache.isis.core.progmodel.facets.object.plural.annotation.PluralAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.plural.staticmethod.PluralMethodFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.regex.annotation.RegExFacetAnnotationForTypeFacetFactory;
-import org.apache.isis.core.progmodel.facets.object.stable.annotation.ViewModelAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.title.TitleMethodFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.title.annotation.TitleAnnotationFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.typicallen.annotation.TypicalLengthAnnotationOnTypeFacetFactory;
@@ -111,6 +112,9 @@ import org.apache.isis.core.progmodel.facets.object.validate.method.ValidateObje
 import org.apache.isis.core.progmodel.facets.object.validperspec.MustSatisfySpecificationOnTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.validprops.ObjectValidPropertiesFacetFactory;
 import org.apache.isis.core.progmodel.facets.object.value.annotation.ValueFacetFactory;
+import org.apache.isis.core.progmodel.facets.object.viewmodel.annotation.ViewModelAnnotationFacetFactory;
+import org.apache.isis.core.progmodel.facets.paged.PagedAnnotationOnCollectionFacetFactory;
+import org.apache.isis.core.progmodel.facets.paged.PagedAnnotationOnTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.param.choices.enums.ParameterChoicesFacetDerivedFromChoicesFacetFacetFactory;
 import org.apache.isis.core.progmodel.facets.param.choices.method.ActionChoicesFacetFactory;
 import org.apache.isis.core.progmodel.facets.param.choices.methodnum.ActionParameterChoicesFacetFactory;
@@ -161,8 +165,11 @@ import org.apache.isis.core.progmodel.facets.value.chars.CharPrimitiveValueTypeF
 import org.apache.isis.core.progmodel.facets.value.chars.CharWrapperValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.color.ColorValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.date.DateValueTypeFacetFactory;
+import org.apache.isis.core.progmodel.facets.value.datejodalocal.JodaLocalDateValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.datesql.JavaSqlDateValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.datetime.DateTimeValueTypeFacetFactory;
+import org.apache.isis.core.progmodel.facets.value.datetimejoda.JodaDateTimeValueTypeFacetFactory;
+import org.apache.isis.core.progmodel.facets.value.datetimejodalocal.JodaLocalDateTimeValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.dateutil.JavaUtilDateValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.floats.FloatPrimitiveValueTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.value.floats.FloatWrapperValueTypeFacetFactory;
@@ -222,8 +229,9 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
         // properties
         addFactory(PropertyAccessorFacetFactory.class);
         addFactory(PropertySetAndClearFacetFactory.class);
-        addFactory(PropertyModifyFacetFactory.class); // must come after
-                                                      // PropertySetAndClearFacetFactory
+        // must come after PropertySetAndClearFacetFactory
+        addFactory(PropertyModifyFacetFactory.class);
+        
         addFactory(PropertyValidateFacetFactory.class);
         addFactory(PropertyChoicesFacetFactory.class);
         addFactory(PropertyDefaultFacetFactory.class);
@@ -245,6 +253,8 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
         addFactory(ActionParameterDefaultsFacetFactory.class);
         addFactory(QueryOnlyAnnotationFacetFactory.class);
         addFactory(IdempotentAnnotationFacetFactory.class);
+        addFactory(ActionSemanticsAnnotationFacetFactory.class);
+        addFactory(ActionSemanticsFallbackFacetFactory.class);
 
         // members in general
         addFactory(NamedFacetViaNameMethodFacetFactory.class);
@@ -256,6 +266,7 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
         addFactory(HiddenFacetViaAlwaysHideMethodFacetFactory.class);
         addFactory(HiddenFacetViaHideMethodFacetFactory.class);
         addFactory(ContentDescriptionFacetViaMethodFactory.class);
+        addFactory(CommonlyUsedAnnotationFacetFactory.class);
 
         // objects
         addFactory(ObjectSpecIdAnnotationFacetFactory.class);
@@ -292,8 +303,6 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
 
         addFactory(DisabledAnnotationFacetFactory.class);
         addFactory(EncodableAnnotationFacetFactory.class);
-        addFactory(ExecutedAnnotationFacetFactory.class);
-        addFactory(ExecutedViaNamingConventionFacetFactory.class);
         addFactory(ExplorationAnnotationFacetFactory.class);
         addFactory(PrototypeAnnotationFacetFactory.class);
         addFactory(NotContributedAnnotationFacetFactory.class);
@@ -302,6 +311,7 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
         addFactory(FieldOrderAnnotationFacetFactory.class);
 
         addFactory(HiddenAnnotationForTypeFacetFactory.class);
+        // must come after the TitleAnnotationFacetFactory, because can act as an override
         addFactory(HiddenAnnotationForMemberFacetFactory.class);
 
         addFactory(HiddenObjectViaHiddenMethodFacetFactory.class);
@@ -311,7 +321,7 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
         addFactory(DisabledFacetForPropertyDerivedFromImmutableTypeFacetFactory.class);
         addFactory(DisabledFacetForCollectionDerivedFromImmutableTypeFacetFactory.class);
 
-        addFactory(ImmutableMarkerInterfacesFacetFactory.class);
+        addFactory(ImmutableMarkerInterfaceFacetFactory.class);
 
         addFactory(ViewModelAnnotationFacetFactory.class);
 
@@ -344,11 +354,17 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
 
         addFactory(ParseableFacetFactory.class);
         addFactory(PluralAnnotationFacetFactory.class);
+        addFactory(PagedAnnotationOnTypeFacetFactory.class);
+        addFactory(PagedAnnotationOnCollectionFacetFactory.class);
+
+        addFactory(AutoCompleteAnnotationFacetFactory.class);
+
 
         // must come after any facets that install titles
         addFactory(MaskAnnotationForTypeFacetFactory.class);
         addFactory(MaskAnnotationForPropertyFacetFactory.class);
         addFactory(MaskAnnotationForParameterFacetFactory.class);
+        
 
         // must come after any facets that install titles, and after mask
         // if takes precedence over mask.
@@ -404,6 +420,11 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
         addFactory(ImageValueTypeFacetFactory.class);
         addFactory(JavaAwtImageValueTypeFacetFactory.class);
 
+        // jodatime values
+        addFactory(JodaLocalDateValueTypeFacetFactory.class);
+        addFactory(JodaLocalDateTimeValueTypeFacetFactory.class);
+        addFactory(JodaDateTimeValueTypeFacetFactory.class);
+        
         // written to not trample over TypeOf if already installed
         addFactory(CollectionFacetFactory.class);
         // must come after CollectionFacetFactory

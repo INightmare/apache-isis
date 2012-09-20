@@ -39,14 +39,12 @@ public abstract class DoubleValueSemanticsProviderAbstract extends ValueSemantic
     }
 
     private static final Double DEFAULT_VALUE = new Double(0.0d);
-    private static final int TYPICAL_LENGTH = 22;
-    private static final boolean IMMUTABLE = true;
-    private static final boolean EQUAL_BY_CONTENT = true;
+    private static final int TYPICAL_LENGTH = 10;
 
     private final NumberFormat format;
 
     public DoubleValueSemanticsProviderAbstract(final FacetHolder holder, final Class<Double> adaptedClass, final IsisConfiguration configuration, final ValueSemanticsProviderContext context) {
-        super(type(), holder, adaptedClass, TYPICAL_LENGTH, IMMUTABLE, EQUAL_BY_CONTENT, DEFAULT_VALUE, configuration, context);
+        super(type(), holder, adaptedClass, TYPICAL_LENGTH, Immutability.IMMUTABLE, EqualByContent.HONOURED, DEFAULT_VALUE, configuration, context);
         format = determineNumberFormat("value.format.double");
     }
 

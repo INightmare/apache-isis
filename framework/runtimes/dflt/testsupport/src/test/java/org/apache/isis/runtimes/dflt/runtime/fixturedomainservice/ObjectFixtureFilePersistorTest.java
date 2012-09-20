@@ -20,7 +20,8 @@
 package org.apache.isis.runtimes.dflt.runtime.fixturedomainservice;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
+import static org.junit.Assume.assumeThat;
 
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -28,6 +29,7 @@ import java.text.SimpleDateFormat;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.TimeZone;
 
 import junit.framework.Assert;
 
@@ -78,6 +80,8 @@ public class ObjectFixtureFilePersistorTest {
 
         iswf.fixtures.smpl2.setName("Joe Bloggs");
         iswf.fixtures.smpl2.setDate(dateFormat.parse("09-Apr-2011 02:10 UTC"));
+
+        assumeThat(TimeZone.getDefault().getDisplayName(), is("Greenwich Mean Time"));
     }
     
 
@@ -87,12 +91,13 @@ public class ObjectFixtureFilePersistorTest {
         final StringReader reader = new StringReader(SimpleEntity.class.getName() + "#1\n  name: Fred Smith\n  date: 08-Mar-2010 01:00 UTC");
         final Set<Object> objects = persistor.loadData(reader);
 
-        Assert.assertEquals(1, objects.size());
+        assertEquals(1, objects.size());
         final Object object = objects.toArray()[0];
         assertThat(object instanceof SimpleEntity, is(true));
         final SimpleEntity epv = (SimpleEntity) object;
-        Assert.assertEquals("Fred Smith", epv.getName());
-        Assert.assertEquals(dateFormat.parse("08-Mar-2010 01:00 GMT"), epv.getDate());
+        assertEquals("Fred Smith", epv.getName());
+        
+        assertEquals(dateFormat.parse("08-Mar-2010 01:00 GMT"), epv.getDate());
     }
 
     @Test

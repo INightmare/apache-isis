@@ -19,10 +19,14 @@
 
 package org.apache.isis.core.metamodel.spec.feature;
 
+
+import org.apache.isis.applib.annotation.When;
+import org.apache.isis.applib.annotation.Where;
 import org.apache.isis.applib.filter.Filter;
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
 import org.apache.isis.core.metamodel.consent.Consent;
+import org.apache.isis.core.metamodel.facets.hide.HiddenFacet;
 
 public class ObjectAssociationFilters {
 
@@ -36,6 +40,28 @@ public class ObjectAssociationFilters {
         @Override
         public boolean accept(final ObjectAssociation association) {
             return association.isOneToOneAssociation();
+        }
+    };
+
+    /**
+     * Filters only fields that are for properties (ie 1:1 associations)
+     */
+    public final static Filter<ObjectAssociation> WHERE_VISIBLE_IN_COLLECTION_TABLE = new Filter<ObjectAssociation>() {
+        @Override
+        public boolean accept(final ObjectAssociation association) {
+            final HiddenFacet hiddenFacet = association.getFacet(HiddenFacet.class);
+            return hiddenFacet == null || !hiddenFacet.where().inParentedTable();
+        }
+    };
+
+    /**
+     * Filters only fields that are for properties (ie 1:1 associations)
+     */
+    public final static Filter<ObjectAssociation> WHERE_VISIBLE_IN_STANDALONE_TABLE = new Filter<ObjectAssociation>() {
+        @Override
+        public boolean accept(final ObjectAssociation association) {
+            final HiddenFacet hiddenFacet = association.getFacet(HiddenFacet.class);
+            return hiddenFacet == null || !hiddenFacet.where().inStandaloneTable();
         }
     };
 
@@ -61,27 +87,51 @@ public class ObjectAssociationFilters {
 
     /**
      * Filters only properties that are visible statically, ie have not been
-     * unconditionally hidden at compile time. Note this list will include
+     * unconditionally hidden at compile time.
+     * 
+     * <p>
+     * Note this list will include
      * properties marked as hidden once persisted and until persisted, but not
      * those marked hidden always.
      */
-    public static final Filter<ObjectAssociation> STATICALLY_VISIBLE_ASSOCIATIONS = new Filter<ObjectAssociation>() {
+    public static final Filter<ObjectAssociation> WHEN_VISIBLE_IRRESPECTIVE_OF_WHERE = new Filter<ObjectAssociation>() {
         @Override
         public boolean accept(final ObjectAssociation property) {
             return !property.isAlwaysHidden();
         }
     };
 
-    /**
-     * Filters only properties that are visible statically, ie have not been
-     * hidden at compile time.
-     */
-    public static Filter<ObjectAssociation> dynamicallyVisible(final AuthenticationSession session, final ObjectAdapter target) {
+    public static final Filter<ObjectAssociation> staticallyVisible(final Where context) {
+        return new Filter<ObjectAssociation>() {
+            @Override
+            public boolean accept(final ObjectAssociation association) {
+                final HiddenFacet facet = association.getFacet(HiddenFacet.class);
+                if(facet == null) {
+                    return true;
+                }
+                return !(facet.where().includes(context) && facet.when() == When.ALWAYS);
+            }
+        };
+    }
+
+    
+    public static Filter<ObjectAssociation> dynamicallyVisible(final AuthenticationSession session, final ObjectAdapter target, final Where where) {
         return new Filter<ObjectAssociation>() {
             @Override
             public boolean accept(final ObjectAssociation objectAssociation) {
-                final Consent visible = objectAssociation.isVisible(session, target);
+                final Consent visible = objectAssociation.isVisible(session, target, where);
                 return visible.isAllowed();
+            }
+        };
+    }
+
+
+    public static Filter<ObjectAssociation> enabled(final AuthenticationSession session, final ObjectAdapter adapter, final Where where) {
+        return new Filter<ObjectAssociation>() {
+            @Override
+            public boolean accept(final ObjectAssociation objectAssociation) {
+                final Consent usable = objectAssociation.isUsable(session, adapter, where);
+                return usable.isAllowed();
             }
         };
     }

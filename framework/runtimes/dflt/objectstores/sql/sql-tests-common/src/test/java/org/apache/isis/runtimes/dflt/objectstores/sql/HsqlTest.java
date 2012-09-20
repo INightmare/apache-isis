@@ -20,13 +20,38 @@ package org.apache.isis.runtimes.dflt.objectstores.sql;
 
 import org.apache.isis.core.testsupport.files.Files;
 import org.apache.isis.core.testsupport.files.Files.Recursion;
+import org.apache.isis.runtimes.dflt.objectstores.sql.common.Data;
 import org.apache.isis.runtimes.dflt.objectstores.sql.common.SqlIntegrationTestData;
+import org.apache.isis.runtimes.dflt.objectstores.sql.common.SqlIntegrationTestFixtures;
 
+/**
+ * @author Kevin kevin@kmz.co.za
+ * 
+ *         This test implementation uses the HyperSQL database engine to perform "serverless" tests of data creation and
+ *         reloading.
+ * 
+ * 
+ * @version $Rev$ $Date$
+ */
 public class HsqlTest extends SqlIntegrationTestData {
 
     @Override
     public void resetPersistenceStoreDirectlyIfRequired() {
-        Files.deleteFiles("hsql-db", ".xml", Recursion.DONT_RECURSE);
+        Files.deleteFilesWithPrefix("hsql-db", "tests", Recursion.DONT_RECURSE);
+    }
+
+    @Override
+    protected void testCreate() throws Exception {
+        final SqlIntegrationTestFixtures sqlIntegrationTestFixtures = getSqlIntegrationTestFixtures();
+        for (final String tableName : Data.getTableNames()) {
+            sqlIntegrationTestFixtures.dropTable(tableName);
+        }
+        super.testCreate();
+    }
+
+    @Override
+    protected String getSqlSetupString() {
+        return "COMMIT;";
     }
 
     @Override

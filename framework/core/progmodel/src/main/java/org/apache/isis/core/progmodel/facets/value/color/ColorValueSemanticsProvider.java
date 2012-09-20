@@ -41,8 +41,6 @@ public class ColorValueSemanticsProvider extends ValueSemanticsProviderAndFacetA
 
     private static final Color DEFAULT_VALUE = Color.BLACK;
     private static final int TYPICAL_LENGTH = 4;
-    private static final boolean IMMUTABLE = true;
-    private static final boolean EQUAL_BY_CONTENT = false;
 
     /**
      * Required because implementation of {@link Parser} and
@@ -53,7 +51,7 @@ public class ColorValueSemanticsProvider extends ValueSemanticsProviderAndFacetA
     }
 
     public ColorValueSemanticsProvider(final FacetHolder holder, final IsisConfiguration configuration, final ValueSemanticsProviderContext context) {
-        super(type(), holder, Color.class, TYPICAL_LENGTH, IMMUTABLE, EQUAL_BY_CONTENT, DEFAULT_VALUE, configuration, context);
+        super(type(), holder, Color.class, TYPICAL_LENGTH, Immutability.IMMUTABLE, EqualByContent.NOT_HONOURED, DEFAULT_VALUE, configuration, context);
     }
 
     // //////////////////////////////////////////////////////////////////

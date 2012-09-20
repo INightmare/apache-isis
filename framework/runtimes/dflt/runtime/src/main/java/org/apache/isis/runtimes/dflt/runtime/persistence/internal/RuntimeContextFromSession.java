@@ -22,6 +22,7 @@ package org.apache.isis.runtimes.dflt.runtime.persistence.internal;
 import java.util.List;
 
 import org.apache.isis.applib.ApplicationException;
+import org.apache.isis.applib.bookmarks.Bookmark;
 import org.apache.isis.applib.profiles.Localization;
 import org.apache.isis.applib.query.Query;
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
@@ -75,7 +76,7 @@ public class RuntimeContextFromSession extends RuntimeContextAbstract {
     private final ObjectInstantiator objectInstantiator;
     private final ObjectPersistor objectPersistor;
     private final ServicesProvider servicesProvider;
-    private final ServicesInjector dependencyInjector;
+    private final ServicesInjector servicesInjector;
     private final QuerySubmitter querySubmitter;
     private final DomainObjectServices domainObjectServices;
     private final LocalizationProviderAbstract localizationProvider;
@@ -123,7 +124,12 @@ public class RuntimeContextFromSession extends RuntimeContextAbstract {
             public ObjectAdapter adapterFor(TypedOid oid) {
             	return getRuntimeAdapterManager().adapterFor(oid);
             }
-            
+
+            @Override
+            public ObjectAdapter adapterFor(TypedOid oid, ConcurrencyChecking concurrencyChecking) {
+                return getRuntimeAdapterManager().adapterFor(oid, concurrencyChecking);
+            }
+
             @Override
             public void injectInto(Object candidate) {
                 if (AdapterManagerAware.class.isAssignableFrom(candidate.getClass())) {
@@ -131,6 +137,7 @@ public class RuntimeContextFromSession extends RuntimeContextAbstract {
                     cast.setAdapterManager(this);
                 }
             }
+
 
         };
         this.objectInstantiator = new ObjectInstantiatorAbstract() {
@@ -182,6 +189,17 @@ public class RuntimeContextFromSession extends RuntimeContextAbstract {
             public ObjectAdapter createAggregatedInstance(final ObjectSpecification spec, final ObjectAdapter parent) {
                 return getPersistenceSession().createAggregatedInstance(spec, parent);
             };
+
+            @Override
+            public Object lookup(Bookmark bookmark) {
+                return new DomainObjectContainerResolve().lookup(bookmark);
+            }
+
+
+            @Override
+            public Bookmark bookmarkFor(Object domainObject) {
+                return new DomainObjectContainerResolve().bookmarkFor(domainObject);
+            }
 
             @Override
             public void resolve(final Object parent) {
@@ -244,7 +262,7 @@ public class RuntimeContextFromSession extends RuntimeContextAbstract {
                 return list.size() > 0 ? list.get(0) : null;
             }
         };
-        this.dependencyInjector = new ServicesInjector() {
+        this.servicesInjector = new ServicesInjector() {
 
             @Override
             public void injectServicesInto(final Object object) {
@@ -255,7 +273,12 @@ public class RuntimeContextFromSession extends RuntimeContextAbstract {
             public void injectServicesInto(List<Object> objects) {
                 getPersistenceSession().getServicesInjector().injectServicesInto(objects);
             }
-            
+
+            @Override
+            public Object lookupService(Class<?> serviceClass) {
+                return getPersistenceSession().getServicesInjector().lookupService(serviceClass);
+            }
+
             @Override
             public void injectInto(Object candidate) {
                 if (ServicesInjectorAware.class.isAssignableFrom(candidate.getClass())) {
@@ -319,7 +342,7 @@ public class RuntimeContextFromSession extends RuntimeContextAbstract {
 
     @Override
     public ServicesInjector getDependencyInjector() {
-        return dependencyInjector;
+        return servicesInjector;
     }
 
     @Override

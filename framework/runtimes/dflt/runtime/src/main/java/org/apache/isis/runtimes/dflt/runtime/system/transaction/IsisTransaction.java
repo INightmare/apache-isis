@@ -27,22 +27,33 @@ import static org.hamcrest.Matchers.not;
 
 import java.util.Collections;
 import java.util.List;
-
-import com.google.common.collect.Lists;
-
-import org.apache.log4j.Logger;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.isis.core.commons.components.TransactionScopedComponent;
 import org.apache.isis.core.commons.ensure.Ensure;
+import org.apache.isis.core.commons.exceptions.IsisException;
 import org.apache.isis.core.commons.lang.ToString;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
 import org.apache.isis.core.metamodel.adapter.ResolveState;
-import org.apache.isis.runtimes.dflt.runtime.persistence.ObjectPersistenceException;
+import org.apache.isis.core.metamodel.adapter.mgr.AdapterManager;
+import org.apache.isis.core.metamodel.adapter.oid.OidMarshaller;
+import org.apache.isis.core.metamodel.spec.feature.ObjectAssociation;
+import org.apache.isis.core.metamodel.spec.feature.ObjectAssociationFilters;
 import org.apache.isis.runtimes.dflt.runtime.persistence.objectstore.transaction.CreateObjectCommand;
 import org.apache.isis.runtimes.dflt.runtime.persistence.objectstore.transaction.DestroyObjectCommand;
 import org.apache.isis.runtimes.dflt.runtime.persistence.objectstore.transaction.PersistenceCommand;
 import org.apache.isis.runtimes.dflt.runtime.persistence.objectstore.transaction.SaveObjectCommand;
 import org.apache.isis.runtimes.dflt.runtime.persistence.objectstore.transaction.TransactionalResource;
+import org.apache.isis.runtimes.dflt.runtime.system.context.IsisContext;
+import org.apache.log4j.Logger;
+
+import com.google.common.base.Objects;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 /**
  * Used by the {@link IsisTransactionManager} to captures a set of changes to be
@@ -165,7 +176,7 @@ public class IsisTransaction implements TransactionScopedComponent {
     private final IsisTransactionManager transactionManager;
     private final MessageBroker messageBroker;
     private final UpdateNotifier updateNotifier;
-    private final List<ObjectPersistenceException> exceptions = Lists.newArrayList();
+    private final List<IsisException> exceptions = Lists.newArrayList();
 
     private State state;
 
@@ -275,11 +286,11 @@ public class IsisTransaction implements TransactionScopedComponent {
         Ensure.ensureThatArg(exceptions.isEmpty(), is(true), "exceptions list is not empty");
     }
 
-    public void addException(ObjectPersistenceException exception) {
+    public void addException(IsisException exception) {
         exceptions.add(exception);
     }
     
-    public List<ObjectPersistenceException> getExceptionsIfAny() {
+    public List<IsisException> getExceptionsIfAny() {
         return Collections.unmodifiableList(exceptions);
     }
 
@@ -289,7 +300,7 @@ public class IsisTransaction implements TransactionScopedComponent {
     // flush
     // ////////////////////////////////////////////////////////////////
 
-    public final void flush() {
+    public synchronized final void flush() {
         ensureThatState(getState().canFlush(), is(true), "state is: " + getState());
         if (LOG.isDebugEnabled()) {
             LOG.debug("flush transaction " + this);
@@ -328,10 +339,12 @@ public class IsisTransaction implements TransactionScopedComponent {
      * </table>
      */
     private void doFlush() {
-
-        if (commands.size() > 0) {
+        
+        try {
+            doAudit(getAuditEntries());
+            
             objectStore.execute(Collections.unmodifiableList(commands));
-
+            
             for (final PersistenceCommand command : commands) {
                 if (command instanceof DestroyObjectCommand) {
                     final ObjectAdapter adapter = command.onAdapter();
@@ -339,7 +352,23 @@ public class IsisTransaction implements TransactionScopedComponent {
                     adapter.changeState(ResolveState.DESTROYED);
                 }
             }
+        } finally {
+            // even if there's an exception, we want to clear the commands
+            // this is because the Wicket viewer uses an implementation of IsisContext 
+            // whereby there are several threads which could be sharing the same context
+            // if the first fails, we don't want the others to pick up the same command list
+            // and try again
             commands.clear();
+        }
+    }
+
+    
+    /**
+     * Hook method for subtypes to audit as required.
+     */
+    protected void doAudit(Set<Entry<AdapterAndProperty, PreAndPostValues>> auditEntries) {
+        for (Entry<AdapterAndProperty, PreAndPostValues> auditEntry : auditEntries) {
+            LOG.info(auditEntry.getKey() + ": " + auditEntry.getValue());
         }
     }
 
@@ -349,7 +378,8 @@ public class IsisTransaction implements TransactionScopedComponent {
     // commit
     // ////////////////////////////////////////////////////////////////
 
-    public final void commit() {
+    public synchronized final void commit() {
+
         ensureThatState(getState().canCommit(), is(true), "state is: " + getState());
         ensureThatState(exceptions.isEmpty(), is(true), "cannot commit: " + exceptions.size() + " exceptions have been raised");
 
@@ -378,7 +408,7 @@ public class IsisTransaction implements TransactionScopedComponent {
     // abort
     // ////////////////////////////////////////////////////////////////
 
-    public final void abort() {
+    public synchronized final void abort() {
         ensureThatState(getState().canAbort(), is(true), "state is: " + getState());
         if (LOG.isInfoEnabled()) {
             LOG.info("abort transaction " + this);
@@ -389,7 +419,7 @@ public class IsisTransaction implements TransactionScopedComponent {
 
     
 
-    protected void setAbortCause(final RuntimeException cause) {
+    private void setAbortCause(final RuntimeException cause) {
         this.cause = cause;
     }
 
@@ -500,5 +530,160 @@ public class IsisTransaction implements TransactionScopedComponent {
         return updateNotifier;
     }
 
+    public static class AdapterAndProperty {
+        private final ObjectAdapter objectAdapter;
+        private final ObjectAssociation property;
+        
+        public static AdapterAndProperty of(ObjectAdapter adapter, ObjectAssociation property) {
+            return new AdapterAndProperty(adapter, property);
+        }
+
+        private AdapterAndProperty(ObjectAdapter adapter, ObjectAssociation property) {
+            this.objectAdapter = adapter;
+            this.property = property;
+        }
+        
+        public ObjectAdapter getAdapter() {
+            return objectAdapter;
+        }
+        public ObjectAssociation getProperty() {
+            return property;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((objectAdapter == null) ? 0 : objectAdapter.hashCode());
+            result = prime * result + ((property == null) ? 0 : property.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            AdapterAndProperty other = (AdapterAndProperty) obj;
+            if (objectAdapter == null) {
+                if (other.objectAdapter != null)
+                    return false;
+            } else if (!objectAdapter.equals(other.objectAdapter))
+                return false;
+            if (property == null) {
+                if (other.property != null)
+                    return false;
+            } else if (!property.equals(other.property))
+                return false;
+            return true;
+        }
+        
+        @Override
+        public String toString() {
+            return getAdapter().getOid().enStringNoVersion(getMarshaller()) + " , " + getProperty().getId();
+        }
+
+        protected OidMarshaller getMarshaller() {
+            return new OidMarshaller();
+        }
+
+        private Object getPropertyValue() {
+            ObjectAdapter referencedAdapter = property.get(objectAdapter);
+            return referencedAdapter == null ? null : referencedAdapter.getObject();
+        }
+    }
+   
+    
+    ////////////////////////////////////////////////////////////////////////
+    // Auditing
+    ////////////////////////////////////////////////////////////////////////
+
+    public static class PreAndPostValues {
+        
+        private final static Predicate<Entry<?, PreAndPostValues>> CHANGED = new Predicate<Entry<?, PreAndPostValues>>(){
+            @Override
+            public boolean apply(Entry<?, PreAndPostValues> input) {
+                final PreAndPostValues papv = input.getValue();
+                return papv.differ();
+            }};
+            
+        private final Object pre;
+        private Object post;
+        
+        public static PreAndPostValues pre(Object preValue) {
+            return new PreAndPostValues(preValue, null);
+        }
+
+        private PreAndPostValues(Object pre, Object post) {
+            this.pre = pre;
+            this.post = post;
+        }
+        public Object getPre() {
+            return pre;
+        }
+        
+        public Object getPost() {
+            return post;
+        }
+        
+        public void setPost(Object post) {
+            this.post = post;
+        }
+        
+        @Override
+        public String toString() {
+            return getPre() + " -> " + getPost();
+        }
+
+        public boolean differ() {
+            return !Objects.equal(getPre(), getPost());
+        }
+    }
+    
+   
+    private final Map<AdapterAndProperty, PreAndPostValues> auditLog = Maps.newLinkedHashMap();
+    
+
+    public void auditDirty(ObjectAdapter adapter) {
+        for (ObjectAssociation property : adapter.getSpecification().getAssociations(ObjectAssociationFilters.PROPERTIES)) {
+            audit(adapter, property);
+        }
+    }
+    
+    private void audit(ObjectAdapter adapter, ObjectAssociation property) {
+        final AdapterAndProperty aap = AdapterAndProperty.of(adapter, property);
+        PreAndPostValues papv = PreAndPostValues.pre(aap.getPropertyValue());
+        auditLog.put(aap, papv);
+    }
+
+
+    public Set<Entry<AdapterAndProperty, PreAndPostValues>> getAuditEntries() {
+        updatePostValues(auditLog.entrySet());
+
+        return Collections.unmodifiableSet(Sets.filter(auditLog.entrySet(), PreAndPostValues.CHANGED));
+    }
+
+    private void updatePostValues(Set<Entry<AdapterAndProperty, PreAndPostValues>> entrySet) {
+        for (Entry<AdapterAndProperty, PreAndPostValues> entry : entrySet) {
+            final AdapterAndProperty aap = entry.getKey();
+            final PreAndPostValues papv = entry.getValue();
+            
+            papv.setPost(aap.getPropertyValue());
+        }
+    }
+
+
+    
+    ////////////////////////////////////////////////////////////////////////
+    // Dependencies (from context)
+    ////////////////////////////////////////////////////////////////////////
+
+    
+    protected AdapterManager getAdapterManager() {
+        return IsisContext.getPersistenceSession().getAdapterManager();
+    }
     
 }

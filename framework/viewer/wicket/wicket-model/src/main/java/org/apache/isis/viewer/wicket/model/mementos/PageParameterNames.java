@@ -19,14 +19,11 @@
 
 package org.apache.isis.viewer.wicket.model.mementos;
 
-import org.apache.wicket.PageParameters;
-import org.apache.wicket.markup.html.link.BookmarkablePageLink;
+import org.apache.wicket.request.mapper.parameter.PageParameters;
 
+import org.apache.isis.core.metamodel.adapter.oid.Oid;
 import org.apache.isis.viewer.wicket.model.util.Strings;
 
-/**
- * For building {@link BookmarkablePageLink}s.
- */
 public enum PageParameterNames {
 
     /**
@@ -36,6 +33,7 @@ public enum PageParameterNames {
      * Also encodes the object's spec, and whether the object is persistent or not.
      */
     OBJECT_OID,
+    
     /**
      * Owning type of an action.
      * 
@@ -44,7 +42,28 @@ public enum PageParameterNames {
      * the owning type could be some superclass if the action has been
      * inherited.
      */
-    ACTION_OWNING_SPEC, ACTION_TYPE, ACTION_NAME_PARMS, ACTION_MODE, ACTION_SINGLE_RESULTS_MODE,
+    ACTION_OWNING_SPEC, 
+    
+    /**
+     * 
+     */
+    ACTION_TYPE, 
+    
+    /**
+     * 
+     */
+    ACTION_NAME_PARMS, 
+    
+    /**
+     * 
+     */
+    ACTION_MODE, 
+    
+    /**
+     * 
+     */
+    ACTION_SINGLE_RESULTS_MODE,
+    
     /**
      * The argument acting as a context for a contributed action, if any.
      * 
@@ -67,7 +86,8 @@ public enum PageParameterNames {
     }
 
     public String getFrom(final PageParameters pageParameters) {
-        return pageParameters.getString(this.toString());
+        //return pageParameters.getString(this.toString());
+        return pageParameters.get(this.toString()).toString();
     }
 
     public void addTo(final PageParameters pageParameters, final String value) {

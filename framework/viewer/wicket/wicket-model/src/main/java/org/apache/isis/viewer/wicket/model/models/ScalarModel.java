@@ -25,13 +25,17 @@ import java.util.List;
 
 import org.apache.wicket.Session;
 
+import org.apache.isis.applib.annotation.Where;
 import org.apache.isis.applib.profiles.Localization;
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.commons.authentication.AuthenticationSessionProvider;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
+import org.apache.isis.core.metamodel.adapter.mgr.AdapterManager.ConcurrencyChecking;
+import org.apache.isis.core.metamodel.adapter.version.ConcurrencyException;
 import org.apache.isis.core.metamodel.consent.Consent;
 import org.apache.isis.core.metamodel.facetapi.Facet;
 import org.apache.isis.core.metamodel.facetapi.FacetHolder;
+import org.apache.isis.core.metamodel.facetapi.FacetProvider;
 import org.apache.isis.core.metamodel.facets.mandatory.MandatoryFacet;
 import org.apache.isis.core.metamodel.facets.object.parseable.ParseableFacet;
 import org.apache.isis.core.metamodel.spec.ObjectSpecId;
@@ -53,7 +57,7 @@ import org.apache.isis.viewer.wicket.model.util.ClassLoaders;
  * Is the backing model to each of the fields that appear in forms (for entities
  * or action dialogs).
  */
-public class ScalarModel extends EntityModel {
+public class ScalarModel extends EntityModel implements FacetProvider {
 
     private static final long serialVersionUID = 1L;
 
@@ -83,12 +87,12 @@ public class ScalarModel extends EntityModel {
             }
 
             @Override
-            public String disable(final ScalarModel scalarModel) {
-                final ObjectAdapter parentAdapter = scalarModel.parentObjectAdapterMemento.getObjectAdapter();
+            public String disable(final ScalarModel scalarModel, final Where where) {
+                final ObjectAdapter parentAdapter = scalarModel.parentObjectAdapterMemento.getObjectAdapter(ConcurrencyChecking.CHECK);
                 final OneToOneAssociation property = scalarModel.getPropertyMemento().getProperty();
                 try {
                     final AuthenticationSession session = scalarModel.getAuthenticationSession();
-                    final Consent usable = property.isUsable(session, parentAdapter);
+                    final Consent usable = property.isUsable(session, parentAdapter, where);
                     return usable.isAllowed() ? null : usable.getReason();
                 } catch (final Exception ex) {
                     return ex.getLocalizedMessage();
@@ -103,12 +107,16 @@ public class ScalarModel extends EntityModel {
                     parseableFacet = property.getSpecification().getFacet(ParseableFacet.class);
                 }
                 try {
-                    final ObjectAdapter parentAdapter = scalarModel.parentObjectAdapterMemento.getObjectAdapter();
+                    final ObjectAdapter parentAdapter = scalarModel.parentObjectAdapterMemento.getObjectAdapter(ConcurrencyChecking.CHECK);
                     final ObjectAdapter currentValue = property.get(parentAdapter);
                     Localization localization = IsisContext.getLocalization(); 
                     final ObjectAdapter proposedAdapter = parseableFacet.parseTextEntry(currentValue, proposedPojoAsStr, localization);
                     final Consent valid = property.isAssociationValid(parentAdapter, proposedAdapter);
                     return valid.isAllowed() ? null : valid.getReason();
+                } catch (final ConcurrencyException ex) {
+                    // disregard concurrency exceptions because will pick up at the IFormValidator level rather
+                    // than each individual property.
+                    return null;
                 } catch (final Exception ex) {
                     return ex.getLocalizedMessage();
                 }
@@ -116,7 +124,7 @@ public class ScalarModel extends EntityModel {
 
             @Override
             public String validate(final ScalarModel scalarModel, final ObjectAdapter proposedAdapter) {
-                final ObjectAdapter parentAdapter = scalarModel.parentObjectAdapterMemento.getObjectAdapter();
+                final ObjectAdapter parentAdapter = scalarModel.parentObjectAdapterMemento.getObjectAdapter(ConcurrencyChecking.CHECK);
                 final OneToOneAssociation property = scalarModel.getPropertyMemento().getProperty();
                 try {
                     final Consent valid = property.isAssociationValid(parentAdapter, proposedAdapter);
@@ -142,8 +150,20 @@ public class ScalarModel extends EntityModel {
             public List<ObjectAdapter> getChoices(final ScalarModel scalarModel) {
                 final PropertyMemento propertyMemento = scalarModel.getPropertyMemento();
                 final OneToOneAssociation property = propertyMemento.getProperty();
-                final ObjectAdapter[] choices = property.getChoices(scalarModel.parentObjectAdapterMemento.getObjectAdapter());
+                final ObjectAdapter[] choices = property.getChoices(scalarModel.parentObjectAdapterMemento.getObjectAdapter(ConcurrencyChecking.CHECK));
                 return choicesAsList(choices);
+            }
+
+            @Override
+            public void resetVersion(ScalarModel scalarModel) {
+                scalarModel.parentObjectAdapterMemento.resetVersion();
+            }
+
+            @Override
+            public String getDescribedAs(final ScalarModel scalarModel) {
+                final PropertyMemento propertyMemento = scalarModel.getPropertyMemento();
+                final OneToOneAssociation property = propertyMemento.getProperty();
+                return property.getDescription();
             }
         },
         PARAMETER {
@@ -176,7 +196,7 @@ public class ScalarModel extends EntityModel {
             }
 
             @Override
-            public String disable(final ScalarModel scalarModel) {
+            public String disable(final ScalarModel scalarModel, Where where) {
                 // always enabled
                 return null;
             }
@@ -189,7 +209,7 @@ public class ScalarModel extends EntityModel {
                     parseableFacet = parameter.getSpecification().getFacet(ParseableFacet.class);
                 }
                 try {
-                    final ObjectAdapter parentAdapter = scalarModel.parentObjectAdapterMemento.getObjectAdapter();
+                    final ObjectAdapter parentAdapter = scalarModel.parentObjectAdapterMemento.getObjectAdapter(ConcurrencyChecking.CHECK);
                     Localization localization = IsisContext.getLocalization(); 
                     final String invalidReasonIfAny = parameter.isValid(parentAdapter, proposedPojoAsStr, localization);
                     return invalidReasonIfAny;
@@ -200,7 +220,7 @@ public class ScalarModel extends EntityModel {
 
             @Override
             public String validate(final ScalarModel scalarModel, final ObjectAdapter proposedAdapter) {
-                // TODO - not supported in NOF 4.0.0
+                // TODO - not yet supported.
                 return null;
             }
 
@@ -220,8 +240,19 @@ public class ScalarModel extends EntityModel {
             public List<ObjectAdapter> getChoices(final ScalarModel scalarModel) {
                 final ActionParameterMemento parameterMemento = scalarModel.getParameterMemento();
                 final ObjectActionParameter actionParameter = parameterMemento.getActionParameter();
-                final ObjectAdapter[] choices = actionParameter.getChoices(scalarModel.parentObjectAdapterMemento.getObjectAdapter());
+                final ObjectAdapter[] choices = actionParameter.getChoices(scalarModel.parentObjectAdapterMemento.getObjectAdapter(ConcurrencyChecking.CHECK));
                 return choicesAsList(choices);
+            }
+
+            @Override
+            public void resetVersion(ScalarModel scalarModel) {
+                // no-op?
+            }
+            @Override
+            public String getDescribedAs(final ScalarModel scalarModel) {
+                final ActionParameterMemento parameterMemento = scalarModel.getParameterMemento();
+                final ObjectActionParameter actionParameter = parameterMemento.getActionParameter();
+                return actionParameter.getDescription();
             }
         };
 
@@ -238,7 +269,7 @@ public class ScalarModel extends EntityModel {
 
         public abstract String getIdentifier(ScalarModel scalarModel);
 
-        public abstract String disable(ScalarModel scalarModel);
+        public abstract String disable(ScalarModel scalarModel, Where where);
 
         public abstract String parseAndValidate(ScalarModel scalarModel, String proposedPojoAsStr);
 
@@ -258,10 +289,15 @@ public class ScalarModel extends EntityModel {
 
         public abstract List<ObjectAdapter> getChoices(ScalarModel scalarModel);
 
+        public abstract void resetVersion(ScalarModel scalarModel);
+
+        public abstract String getDescribedAs(ScalarModel scalarModel);
     }
+
 
     private final Kind kind;
     private final ObjectAdapterMemento parentObjectAdapterMemento;
+
 
     /**
      * Populated only if {@link #getKind()} is {@link Kind#PARAMETER}
@@ -284,7 +320,7 @@ public class ScalarModel extends EntityModel {
         this.parameterMemento = apm;
 
         final ObjectActionParameter actionParameter = parameterMemento.getActionParameter();
-        final ObjectAdapter defaultAdapter = actionParameter.getDefault(parentObjectAdapterMemento.getObjectAdapter());
+        final ObjectAdapter defaultAdapter = actionParameter.getDefault(parentObjectAdapterMemento.getObjectAdapter(ConcurrencyChecking.CHECK));
         setObject(defaultAdapter);
 
         setMode(Mode.EDIT);
@@ -300,11 +336,15 @@ public class ScalarModel extends EntityModel {
         this.parentObjectAdapterMemento = parentObjectAdapterMemento;
         this.propertyMemento = pm;
 
+        setObject(parentObjectAdapterMemento);
+        setMode(Mode.VIEW);
+    }
+
+    protected void setObject(final ObjectAdapterMemento parentObjectAdapterMemento) {
         final OneToOneAssociation property = propertyMemento.getProperty();
-        final ObjectAdapter associatedAdapter = property.get(parentObjectAdapterMemento.getObjectAdapter());
+        final ObjectAdapter associatedAdapter = property.get(parentObjectAdapterMemento.getObjectAdapter(ConcurrencyChecking.CHECK));
 
         setObject(associatedAdapter);
-        setMode(Mode.VIEW);
     }
 
     /**
@@ -383,8 +423,8 @@ public class ScalarModel extends EntityModel {
         setObject(adapter);
     }
 
-    public String disable() {
-        return kind.disable(this);
+    public String disable(Where where) {
+        return kind.disable(this, where);
     }
 
     public String parseAndValidate(final String proposedPojoAsStr) {
@@ -417,6 +457,14 @@ public class ScalarModel extends EntityModel {
 
     public List<ObjectAdapter> getChoices() {
         return kind.getChoices(this);
+    }
+
+    public void resetVersion() {
+        kind.resetVersion(this);
+    }
+
+    public String getDescribedAs() {
+        return kind.getDescribedAs(this);
     }
 
     public ObjectAdapter getParent() {

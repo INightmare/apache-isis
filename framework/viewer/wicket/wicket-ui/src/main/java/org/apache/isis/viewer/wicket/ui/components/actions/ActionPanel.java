@@ -22,9 +22,14 @@ package org.apache.isis.viewer.wicket.ui.components.actions;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.wicket.markup.html.basic.Label;
+import org.apache.wicket.model.Model;
+
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
+import org.apache.isis.core.metamodel.adapter.version.ConcurrencyException;
 import org.apache.isis.core.metamodel.facets.object.value.ValueFacet;
 import org.apache.isis.core.metamodel.spec.ObjectSpecification;
+import org.apache.isis.runtimes.dflt.runtime.system.context.IsisContext;
 import org.apache.isis.viewer.wicket.model.common.SelectionHandler;
 import org.apache.isis.viewer.wicket.model.isis.PersistenceSessionProvider;
 import org.apache.isis.viewer.wicket.model.models.ActionExecutor;
@@ -33,6 +38,7 @@ import org.apache.isis.viewer.wicket.model.models.EntityCollectionModel;
 import org.apache.isis.viewer.wicket.model.models.EntityModel;
 import org.apache.isis.viewer.wicket.model.models.ValueModel;
 import org.apache.isis.viewer.wicket.ui.ComponentType;
+import org.apache.isis.viewer.wicket.ui.app.registry.ComponentFactoryRegistry;
 import org.apache.isis.viewer.wicket.ui.pages.entity.EntityPage;
 import org.apache.isis.viewer.wicket.ui.panels.PanelAbstract;
 
@@ -51,12 +57,15 @@ public class ActionPanel extends PanelAbstract<ActionModel> implements ActionExe
 
     private static final long serialVersionUID = 1L;
 
+    
     /**
      * The various component types, one of which will be rendered.
      * 
      * @see #hideAllBut(ComponentType)
      */
     private static final List<ComponentType> COMPONENT_TYPES = Arrays.asList(ComponentType.PARAMETERS, ComponentType.ENTITY_LINK, ComponentType.ENTITY, ComponentType.VALUE, ComponentType.EMPTY_COLLECTION, ComponentType.VOID_RETURN, ComponentType.COLLECTION_CONTENTS);
+
+    private static final String ID_ACTION_NAME = "actionName";
 
     public ActionPanel(final String id, final ActionModel actionModel) {
         super(id, actionModel);
@@ -66,7 +75,7 @@ public class ActionPanel extends PanelAbstract<ActionModel> implements ActionExe
 
     private void buildGui(final ActionModel actionModel) {
         if (actionModel.getActionMode() == ActionModel.Mode.PARAMETERS) {
-            buildGuiForParameters();
+            buildGuiForParameters(actionModel);
         } else {
             executeActionAndProcessResults();
         }
@@ -76,43 +85,72 @@ public class ActionPanel extends PanelAbstract<ActionModel> implements ActionExe
         return super.getModel();
     }
 
-    private void buildGuiForParameters() {
-        hideAllBut(ComponentType.PARAMETERS);
+    private void buildGuiForParameters(ActionModel actionModel) {
+        hideAllBut(ComponentType.PARAMETERS, ComponentType.ENTITY_ICON_AND_TITLE);
         getComponentFactoryRegistry().addOrReplaceComponent(this, ComponentType.PARAMETERS, getActionModel());
+        getComponentFactoryRegistry().addOrReplaceComponent(this, ComponentType.ENTITY_ICON_AND_TITLE, new EntityModel(getActionModel().getTargetAdapter()));
+
+        final String actionName = actionModel.getActionMemento().getAction().getName();
+        addOrReplace(new Label(ID_ACTION_NAME, Model.of(actionName)));
     }
 
     @Override
     public void executeActionAndProcessResults() {
 
-        final ObjectAdapter targetAdapter = getModel().getTargetAdapter();
+        permanentlyHide(ComponentType.ENTITY_ICON_AND_TITLE);
+        permanentlyHide(ID_ACTION_NAME);
 
-        final ActionModel actionModel = getActionModel();
-        final String invalidReasonIfAny = actionModel.getReasonInvalidIfAny();
-        if (invalidReasonIfAny != null) {
-            error(invalidReasonIfAny);
+        ObjectAdapter targetAdapter = null;
+        try {
+            targetAdapter = getModel().getTargetAdapter();
+
+            // validate the action parameters (if any)
+            final ActionModel actionModel = getActionModel();
+            final String invalidReasonIfAny = actionModel.getReasonInvalidIfAny();
+            if (invalidReasonIfAny != null) {
+                error(invalidReasonIfAny);
+                return;
+            }
+
+            // executes the action
+            ObjectAdapter resultAdapter = actionModel.getObject();
+            if(resultAdapter == null) {
+                // handle void methods
+                resultAdapter = targetAdapter;
+            }
+
+            final ResultType resultType = ResultType.determineFor(resultAdapter);
+            resultType.addResults(this, resultAdapter);
+
+        } catch(ConcurrencyException ex) {
+            
+            // second attempt should succeed, because the Oid would have been updated in the attempt
+            if(targetAdapter == null) {
+                targetAdapter = getModel().getTargetAdapter();
+            }
+
+            // forward onto the target page with the concurrency exception
+            final ResultType resultType = ResultType.determineFor(targetAdapter);
+            resultType.addResults(this, targetAdapter, ex);
+
             return;
         }
-
-        // executes the action
-        ObjectAdapter resultAdapter = actionModel.getObject();
-        if (resultAdapter == null) {
-            // TODO: a void; should indicate somehow
-            resultAdapter = targetAdapter;
-        }
-
-        final ResultType resultType = ResultType.determineFor(resultAdapter);
-
-        resultType.addResults(this, resultAdapter);
     }
 
     enum ResultType {
         OBJECT {
             @Override
-            public void addResults(final ActionPanel panel, final ObjectAdapter resultAdapter) {
+            public void addResults(final ActionPanel actionPanel, final ObjectAdapter resultAdapter) {
 
-                final ObjectAdapter actualAdapter = determineActualAdapter(resultAdapter, panel);
+                final ObjectAdapter actualAdapter = determineActualAdapter(resultAdapter, actionPanel);
 
-                addResultsAccordingToSingleResultsMode(panel, actualAdapter);
+                //actionPanel.set
+                addResultsAccordingToSingleResultsMode(actionPanel, actualAdapter, null);
+            }
+
+            @Override
+            public void addResults(ActionPanel actionPanel, ObjectAdapter targetAdapter, ConcurrencyException ex) {
+                addResultsAccordingToSingleResultsMode(actionPanel, targetAdapter, ex);
             }
 
             private ObjectAdapter determineActualAdapter(final ObjectAdapter resultAdapter, final PersistenceSessionProvider psa) {
@@ -128,12 +166,24 @@ public class ActionPanel extends PanelAbstract<ActionModel> implements ActionExe
                 return actualAdapter;
             }
 
-            private void addResultsAccordingToSingleResultsMode(final ActionPanel panel, final ObjectAdapter actualAdapter) {
+            private void addResultsAccordingToSingleResultsMode(final ActionPanel panel, final ObjectAdapter actualAdapter, ConcurrencyException exIfAny) {
                 final ActionModel actionModel = panel.getActionModel();
                 final ActionModel.SingleResultsMode singleResultsMode = actionModel.getSingleResultsMode();
 
                 if (singleResultsMode == ActionModel.SingleResultsMode.REDIRECT) {
-                    panel.setResponsePage(new EntityPage(actualAdapter));
+
+                    // force any changes in state etc to happen now prior to the redirect;
+                    // this should cause our page mementos (eg EntityModel) to hold the correct state.  I hope.
+                    IsisContext.getTransactionManager().getTransaction().flush();
+                    
+                    // build page, also propogate any concurrency exception that might have occurred already
+                    final EntityPage entityPage = new EntityPage(actualAdapter, exIfAny);
+                    
+                    // "redirect-after-post"
+                    
+                    // panel.setRedirect(true); // no longer required, http://mail-archives.apache.org/mod_mbox/wicket-users/201103.mbox/%3CAANLkTin3NmEBaMY9CF8diXA+wTMamQPc2O+tWvG_HCiW@mail.gmail.com%3E
+                    panel.setResponsePage(entityPage);
+                    
                 } else if (singleResultsMode == ActionModel.SingleResultsMode.SELECT) {
                     panel.hideAll();
                     actionModel.getSelectionHandler().onSelected(panel, actualAdapter);
@@ -165,7 +215,8 @@ public class ActionPanel extends PanelAbstract<ActionModel> implements ActionExe
                 if (selectionHandler != null) {
                     collectionModel.setSelectionHandler(selectionHandler);
                 }
-                panel.getComponentFactoryRegistry().addOrReplaceComponent(panel, ComponentType.COLLECTION_CONTENTS, collectionModel);
+                final ComponentFactoryRegistry componentFactoryRegistry = panel.getComponentFactoryRegistry();
+                componentFactoryRegistry.addOrReplaceComponent(panel, ComponentType.COLLECTION_CONTENTS, collectionModel);
             }
         },
         EMPTY {
@@ -195,6 +246,10 @@ public class ActionPanel extends PanelAbstract<ActionModel> implements ActionExe
 
         public abstract void addResults(ActionPanel panel, ObjectAdapter resultAdapter);
 
+        public void addResults(ActionPanel actionPanel, ObjectAdapter targetAdapter, ConcurrencyException ex) {
+            ResultType.OBJECT.addResults(actionPanel, targetAdapter, ex);
+        }
+
         static ResultType determineFor(final ObjectAdapter resultAdapter) {
             final ObjectSpecification resultSpec = resultAdapter.getSpecification();
             if (resultSpec.isNotCollection()) {
@@ -222,16 +277,17 @@ public class ActionPanel extends PanelAbstract<ActionModel> implements ActionExe
         }
     }
 
-    private void hideAllBut(final ComponentType visibleComponentType) {
+    private void hideAllBut(final ComponentType... visibleComponentTypes) {
+        final List<ComponentType> visibleComponentTypeList = Arrays.asList(visibleComponentTypes);
         for (final ComponentType componentType : COMPONENT_TYPES) {
-            if (componentType != visibleComponentType) {
+            if (!visibleComponentTypeList.contains(componentType)) {
                 permanentlyHide(componentType);
             }
         }
     }
 
     private void hideAll() {
-        hideAllBut(null);
+        hideAllBut();
     }
 
 }

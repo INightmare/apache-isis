@@ -37,23 +37,23 @@ import org.apache.isis.core.metamodel.facets.properties.modify.PropertySetterFac
 import org.apache.isis.core.progmodel.facets.AbstractFacetFactoryTest;
 import org.apache.isis.core.progmodel.facets.members.describedas.staticmethod.DescribedAsFacetViaDescriptionMethodFacetFactory;
 import org.apache.isis.core.progmodel.facets.members.describedas.staticmethod.DescribedAsFacetViaMethod;
-import org.apache.isis.core.progmodel.facets.members.disable.DisableForContextFacet;
-import org.apache.isis.core.progmodel.facets.members.disable.DisableForSessionFacet;
-import org.apache.isis.core.progmodel.facets.members.disable.DisabledFacet;
-import org.apache.isis.core.progmodel.facets.members.disable.forsession.DisableForSessionFacetViaMethod;
-import org.apache.isis.core.progmodel.facets.members.disable.forsession.DisabledFacetViaDisableForSessionMethodFacetFactory;
-import org.apache.isis.core.progmodel.facets.members.disable.method.DisableForContextFacetViaMethod;
-import org.apache.isis.core.progmodel.facets.members.disable.method.DisabledFacetViaDisableMethodFacetFactory;
-import org.apache.isis.core.progmodel.facets.members.disable.staticmethod.DisabledFacetAlways;
-import org.apache.isis.core.progmodel.facets.members.disable.staticmethod.DisabledFacetViaProtectMethodFacetFactory;
-import org.apache.isis.core.progmodel.facets.members.hide.HideForContextFacet;
-import org.apache.isis.core.progmodel.facets.members.hide.HideForSessionFacet;
-import org.apache.isis.core.progmodel.facets.members.hide.forsession.HiddenFacetViaHideForSessionMethodFacetFactory;
-import org.apache.isis.core.progmodel.facets.members.hide.forsession.HideForSessionFacetViaMethod;
-import org.apache.isis.core.progmodel.facets.members.hide.method.HiddenFacetViaHideMethodFacetFactory;
-import org.apache.isis.core.progmodel.facets.members.hide.method.HideForContextFacetViaMethod;
-import org.apache.isis.core.progmodel.facets.members.hide.staticmethod.HiddenFacetAlways;
-import org.apache.isis.core.progmodel.facets.members.hide.staticmethod.HiddenFacetViaAlwaysHideMethodFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.disabled.DisableForContextFacet;
+import org.apache.isis.core.progmodel.facets.members.disabled.DisableForSessionFacet;
+import org.apache.isis.core.progmodel.facets.members.disabled.DisabledFacet;
+import org.apache.isis.core.progmodel.facets.members.disabled.forsession.DisableForSessionFacetViaMethod;
+import org.apache.isis.core.progmodel.facets.members.disabled.forsession.DisabledFacetViaDisableForSessionMethodFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.disabled.method.DisableForContextFacetViaMethod;
+import org.apache.isis.core.progmodel.facets.members.disabled.method.DisabledFacetViaDisableMethodFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.disabled.staticmethod.DisabledFacetAlwaysEverywhere;
+import org.apache.isis.core.progmodel.facets.members.disabled.staticmethod.DisabledFacetViaProtectMethodFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.hidden.HideForContextFacet;
+import org.apache.isis.core.progmodel.facets.members.hidden.HideForSessionFacet;
+import org.apache.isis.core.progmodel.facets.members.hidden.forsession.HiddenFacetViaHideForSessionMethodFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.hidden.forsession.HideForSessionFacetViaMethod;
+import org.apache.isis.core.progmodel.facets.members.hidden.method.HiddenFacetViaHideMethodFacetFactory;
+import org.apache.isis.core.progmodel.facets.members.hidden.method.HideForContextFacetViaMethod;
+import org.apache.isis.core.progmodel.facets.members.hidden.staticmethod.HiddenFacetAlwaysEverywhere;
+import org.apache.isis.core.progmodel.facets.members.hidden.staticmethod.HiddenFacetViaAlwaysHideMethodFacetFactory;
 import org.apache.isis.core.progmodel.facets.members.named.staticmethod.NamedFacetViaMethod;
 import org.apache.isis.core.progmodel.facets.members.named.staticmethod.NamedFacetViaNameMethodFacetFactory;
 import org.apache.isis.core.progmodel.facets.properties.accessor.PropertyAccessorFacetFactory;
@@ -238,7 +238,7 @@ public class PropertyMethodsFacetFactoryTest extends AbstractFacetFactoryTest {
 
         facet = facetedMethod.getFacet(DisabledFacet.class);
         assertNotNull(facet);
-        assertTrue(facet instanceof DisabledFacetAlways);
+        assertTrue(facet instanceof DisabledFacetAlwaysEverywhere);
     }
 
     public void testIfHaveSetterAndModifyFacetThenTheModifyFacetWinsOut() {
@@ -707,7 +707,7 @@ public class PropertyMethodsFacetFactoryTest extends AbstractFacetFactoryTest {
 
         final Facet facet = facetedMethod.getFacet(HiddenFacet.class);
         assertNotNull(facet);
-        assertTrue(facet instanceof HiddenFacetAlways);
+        assertTrue(facet instanceof HiddenFacetAlwaysEverywhere);
 
         assertTrue(methodRemover.getRemovedMethodMethodCalls().contains(propertyAlwaysHideMethod));
     }
@@ -737,7 +737,7 @@ public class PropertyMethodsFacetFactoryTest extends AbstractFacetFactoryTest {
 
         final Facet facet = facetedMethod.getFacet(DisabledFacet.class);
         assertNotNull(facet);
-        assertTrue(facet instanceof DisabledFacetAlways);
+        assertTrue(facet instanceof DisabledFacetAlwaysEverywhere);
 
         assertTrue(methodRemover.getRemovedMethodMethodCalls().contains(propertyProtectMethod));
     }

@@ -19,6 +19,7 @@
 
 package org.apache.isis.viewer.wicket.ui.components.scalars.primitive;
 
+import org.apache.wicket.AttributeModifier;
 import org.apache.wicket.Component;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.CheckBox;
@@ -60,8 +61,13 @@ public class BooleanPanel extends ScalarPanelAbstract {
 
         final FormComponentLabel labelIfRegular = new FormComponentLabel(ID_SCALAR_IF_REGULAR, checkBox);
         labelIfRegular.add(checkBox);
-
-        final Label scalarName = new Label(ID_SCALAR_NAME, getFormat().getLabelCaption(checkBox));
+        
+        final String describedAs = getModel().getDescribedAs();
+        if(describedAs != null) {
+            labelIfRegular.add(new AttributeModifier("title", true, Model.of(describedAs)));
+        }
+        
+        final Label scalarName = new Label(ID_SCALAR_NAME, getRendering().getLabelCaption(checkBox));
         labelIfRegular.add(scalarName);
 
         addOrReplace(labelIfRegular);
@@ -72,7 +78,7 @@ public class BooleanPanel extends ScalarPanelAbstract {
 
     /**
      * Mandatory hook method to build the component to render the model when in
-     * {@link Format#COMPACT compact} format.
+     * {@link Rendering#COMPACT compact} format.
      */
     @Override
     protected Component addComponentForCompact() {

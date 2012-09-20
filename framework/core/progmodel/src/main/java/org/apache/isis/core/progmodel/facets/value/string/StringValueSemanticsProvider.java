@@ -36,8 +36,6 @@ public class StringValueSemanticsProvider extends ValueSemanticsProviderAndFacet
     }
 
     private static final int TYPICAL_LENGTH = 25;
-    private static final boolean IMMUTABLE = true;
-    private static final boolean EQUAL_BY_CONTENT = true;
     private static final String DEFAULT_VALUE = null; // no default
 
     /**
@@ -49,7 +47,7 @@ public class StringValueSemanticsProvider extends ValueSemanticsProviderAndFacet
     }
 
     public StringValueSemanticsProvider(final FacetHolder holder, final IsisConfiguration configuration, final ValueSemanticsProviderContext context) {
-        super(type(), holder, String.class, TYPICAL_LENGTH, IMMUTABLE, EQUAL_BY_CONTENT, DEFAULT_VALUE, configuration, context);
+        super(type(), holder, String.class, TYPICAL_LENGTH, Immutability.IMMUTABLE, EqualByContent.HONOURED, DEFAULT_VALUE, configuration, context);
     }
 
     // //////////////////////////////////////////////////////////////////

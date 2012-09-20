@@ -76,6 +76,11 @@
 
 		<dependency>
 			<groupId>org.apache.wicket</groupId>
+			<artifactId>wicket-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.wicket</groupId>
 			<artifactId>wicket-extensions</artifactId>
 		</dependency>
 
@@ -89,13 +94,6 @@
 			<artifactId>wicket-auth-roles</artifactId>
 		</dependency>
 
-		<dependency>
-			<groupId>org.wicketstuff</groupId>
-			<artifactId>scriptaculous</artifactId>
-		</dependency>
-
-
-		<!-- Dependency Injection support -->
 		<dependency>
 			<groupId>org.apache.wicket</groupId>
 			<artifactId>wicket-guice</artifactId>
@@ -120,7 +118,6 @@
 			<artifactId>jmock-legacy</artifactId>
 			<scope>test</scope>
 		</dependency>
-
 	</dependencies>
 
 </project>

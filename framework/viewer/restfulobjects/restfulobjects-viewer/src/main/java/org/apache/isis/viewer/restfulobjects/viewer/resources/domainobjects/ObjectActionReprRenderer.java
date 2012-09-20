@@ -23,6 +23,8 @@ import com.google.common.collect.Lists;
 
 import org.codehaus.jackson.node.NullNode;
 
+import org.apache.isis.applib.annotation.ActionSemantics;
+import org.apache.isis.applib.annotation.Where;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
 import org.apache.isis.core.metamodel.spec.ObjectSpecification;
 import org.apache.isis.core.metamodel.spec.feature.ObjectAction;
@@ -54,7 +56,7 @@ public class ObjectActionReprRenderer extends AbstractObjectMemberReprRenderer<O
     }
 
     private ObjectActionReprRenderer(final ResourceContext resourceContext, final LinkFollower linkFollower, final RepresentationType representationType, final JsonRepresentation representation) {
-        super(resourceContext, linkFollower, representationType, representation);
+        super(resourceContext, linkFollower, representationType, representation, Where.OBJECT_FORMS);
     }
 
     @Override
@@ -96,9 +98,9 @@ public class ObjectActionReprRenderer extends AbstractObjectMemberReprRenderer<O
             return;
         }
         final Map<String, MutatorSpec> mutators = memberType.getMutators();
-        final ActionSemantics semantics = ActionSemantics.determine(this.resourceContext, objectMember);
-
-        final String mutator = semantics.getInvokeKey();
+        
+        final ActionSemantics.Of actionSemantics = objectMember.getSemantics();
+        final String mutator = InvokeKeys.getKeyFor(actionSemantics);
         final MutatorSpec mutatorSpec = mutators.get(mutator);
 
         addLinkFor(mutatorSpec);
@@ -221,8 +223,8 @@ public class ObjectActionReprRenderer extends AbstractObjectMemberReprRenderer<O
     protected void putExtensionsIsisProprietary() {
         getExtensions().mapPut("actionType", objectMember.getType().name().toLowerCase());
 
-        final ActionSemantics semantics = ActionSemantics.determine(resourceContext, objectMember);
-        getExtensions().mapPut("actionSemantics", semantics.getName());
+        final ActionSemantics.Of semantics = objectMember.getSemantics();
+        getExtensions().mapPut("actionSemantics", semantics.getCamelCaseName());
     }
 
 }

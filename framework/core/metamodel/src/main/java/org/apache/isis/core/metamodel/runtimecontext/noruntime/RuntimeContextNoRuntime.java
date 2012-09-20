@@ -22,6 +22,7 @@ package org.apache.isis.core.metamodel.runtimecontext.noruntime;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.isis.applib.bookmarks.Bookmark;
 import org.apache.isis.applib.profiles.Localization;
 import org.apache.isis.applib.query.Query;
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
@@ -78,6 +79,11 @@ public class RuntimeContextNoRuntime extends RuntimeContextAbstract {
             }
 
             @Override
+            public Object lookupService(Class<?> serviceClass) {
+                return null;
+            }
+
+            @Override
             public void injectInto(Object candidate) {
             }
         };
@@ -112,6 +118,11 @@ public class RuntimeContextNoRuntime extends RuntimeContextAbstract {
             @Override
             public ObjectAdapter adapterFor(TypedOid oid) {
             	throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
+            }
+            
+            @Override
+            public ObjectAdapter adapterFor(TypedOid oid, ConcurrencyChecking concurrencyChecking) {
+                throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
             }
             
             @Override
@@ -153,8 +164,24 @@ public class RuntimeContextNoRuntime extends RuntimeContextAbstract {
         };
         domainObjectServices = new DomainObjectServicesAbstract() {
 
+
             @Override
-            public void warnUser(final String message) {
+            public ObjectAdapter createTransientInstance(final ObjectSpecification spec) {
+                throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
+            }
+            
+            @Override
+            public ObjectAdapter createAggregatedInstance(final ObjectSpecification spec, final ObjectAdapter parent) {
+                throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
+            }
+
+            @Override
+            public Object lookup(Bookmark bookmark) {
+                throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
+            }
+
+            @Override
+            public Bookmark bookmarkFor(Object domainObject) {
                 throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
             }
 
@@ -169,12 +196,27 @@ public class RuntimeContextNoRuntime extends RuntimeContextAbstract {
             }
 
             @Override
-            public void raiseError(final String message) {
+            public boolean flush() {
+                throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
+            }
+            
+            @Override
+            public void commit() {
                 throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
             }
 
             @Override
             public void informUser(final String message) {
+                throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
+            }
+            
+            @Override
+            public void warnUser(final String message) {
+                throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
+            }
+
+            @Override
+            public void raiseError(final String message) {
                 throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
             }
 
@@ -188,25 +230,6 @@ public class RuntimeContextNoRuntime extends RuntimeContextAbstract {
                 throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
             }
 
-            @Override
-            public boolean flush() {
-                throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
-            }
-
-            @Override
-            public ObjectAdapter createTransientInstance(final ObjectSpecification spec) {
-                throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
-            }
-
-            @Override
-            public void commit() {
-                throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
-            }
-
-            @Override
-            public ObjectAdapter createAggregatedInstance(final ObjectSpecification spec, final ObjectAdapter parent) {
-                throw new UnsupportedOperationException("Not supported by this implementation of RuntimeContext");
-            }
         };
         localizationProvider = new LocalizationProviderAbstract() {
 

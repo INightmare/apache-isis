@@ -24,14 +24,16 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 
+import org.apache.isis.core.metamodel.spec.SpecificationLoaderSpi;
+
 public class MetaModelValidatorComposite extends MetaModelValidatorAbstract {
 
     private final List<MetaModelValidator> validators = Lists.newArrayList();
 
     @Override
-    public void validate() throws MetaModelInvalidException {
+    public void validate(final ValidationFailures validationFailures)  {
         for (final MetaModelValidator validator : validators) {
-            validator.validate();
+            validator.validate(validationFailures);
         }
     }
 
@@ -43,4 +45,12 @@ public class MetaModelValidatorComposite extends MetaModelValidatorAbstract {
         return Collections.unmodifiableList(validators);
     }
 
+    @Override
+    public void setSpecificationLoaderSpi(SpecificationLoaderSpi specificationLoader) {
+        super.setSpecificationLoaderSpi(specificationLoader);
+        for (final MetaModelValidator validator : validators) {
+            validator.setSpecificationLoaderSpi(specificationLoader);
+        }
+
+    }
 }

@@ -35,14 +35,12 @@ import org.apache.isis.core.progmodel.facets.object.value.ValueSemanticsProvider
 
 public class BigIntegerValueSemanticsProvider extends ValueSemanticsProviderAndFacetAbstract<BigInteger> implements BigIntegerValueFacet {
 
-    private static final int TYPICAL_LENGTH = 19;
+    private static final int TYPICAL_LENGTH = 10;
 
     private static Class<? extends Facet> type() {
         return BigIntegerValueFacet.class;
     }
 
-    private static final boolean IMMUTABLE = true;
-    private static final boolean EQUAL_BY_CONTENT = true;
     private static final BigInteger DEFAULT_VALUE = BigInteger.valueOf(0);
 
     private final NumberFormat format;
@@ -57,7 +55,7 @@ public class BigIntegerValueSemanticsProvider extends ValueSemanticsProviderAndF
 
     public BigIntegerValueSemanticsProvider(final FacetHolder holder, final IsisConfiguration configuration, final ValueSemanticsProviderContext context) {
 
-        super(type(), holder, BigInteger.class, TYPICAL_LENGTH, IMMUTABLE, EQUAL_BY_CONTENT, DEFAULT_VALUE, configuration, context);
+        super(type(), holder, BigInteger.class, TYPICAL_LENGTH, Immutability.IMMUTABLE, EqualByContent.HONOURED, DEFAULT_VALUE, configuration, context);
         format = determineNumberFormat("value.format.int");
     }
 

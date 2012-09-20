@@ -26,16 +26,23 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import java.io.IOException;
 import java.io.Serializable;
 
+import com.google.common.base.Objects;
+
+import org.apache.log4j.Logger;
+
+import org.apache.isis.applib.bookmarks.Bookmark;
 import org.apache.isis.core.commons.encoding.DataInputExtended;
 import org.apache.isis.core.commons.encoding.DataOutputExtended;
 import org.apache.isis.core.commons.ensure.Ensure;
 import org.apache.isis.core.commons.matchers.IsisMatchers;
 import org.apache.isis.core.commons.url.UrlEncodingUtils;
+import org.apache.isis.core.metamodel.adapter.version.ConcurrencyException;
+import org.apache.isis.core.metamodel.adapter.version.Version;
 import org.apache.isis.core.metamodel.spec.ObjectSpecId;
 
-import com.google.common.base.Objects;
-
 public final class RootOidDefault implements Serializable, RootOid {
+
+    private final static Logger LOG = Logger.getLogger(RootOidDefault.class);
 
     private static final long serialVersionUID = 1L;
 
@@ -44,7 +51,7 @@ public final class RootOidDefault implements Serializable, RootOid {
     private final State state;
     
     // not part of equality check
-    private final Long version;
+    private Version version;
 
     private int cachedHashCode;
 
@@ -54,28 +61,67 @@ public final class RootOidDefault implements Serializable, RootOid {
     // Constructor, factory methods
     // ////////////////////////////////////////////
 
+    public static RootOidDefault createTransient(ObjectSpecId objectSpecId, final String identifier) {
+        return new RootOidDefault(objectSpecId, identifier, State.TRANSIENT);
+    }
+
+    public static RootOid create(Bookmark bookmark) {
+        return create(ObjectSpecId.of(bookmark.getObjectType()), bookmark.getIdentifier());
+    }
+
     public static RootOidDefault create(ObjectSpecId objectSpecId, final String identifier) {
         return create(objectSpecId, identifier, null);
     }
 
-    public static RootOidDefault create(ObjectSpecId objectSpecId, final String identifier, Long version) {
-        return new RootOidDefault(objectSpecId, identifier, State.PERSISTENT, version);
+    public static RootOidDefault create(ObjectSpecId objectSpecId, final String identifier, Long versionSequence) {
+        return create(objectSpecId, identifier, versionSequence, null, null);
     }
 
-    public static RootOidDefault createTransient(ObjectSpecId objectSpecId, final String identifier) {
-        return createTransient(objectSpecId, identifier, null);
+    public static RootOidDefault create(ObjectSpecId objectSpecId, final String identifier, Long versionSequence, String versionUser) {
+        return create(objectSpecId, identifier, versionSequence, versionUser, null);
     }
 
-    public static RootOidDefault createTransient(ObjectSpecId objectSpecId, final String identifier, Long version) {
-        return new RootOidDefault(objectSpecId, identifier, State.TRANSIENT, version);
+    public static RootOidDefault create(ObjectSpecId objectSpecId, final String identifier, Long versionSequence, Long versionUtcTimestamp) {
+        return create(objectSpecId, identifier, versionSequence, null, versionUtcTimestamp);
     }
 
+    public static RootOidDefault create(ObjectSpecId objectSpecId, final String identifier, Long versionSequence, String versionUser, Long versionUtcTimestamp) {
+        return new RootOidDefault(objectSpecId, identifier, State.PERSISTENT, Version.create(versionSequence, versionUser, versionUtcTimestamp));
+    }
+
+
+    
     public RootOidDefault(ObjectSpecId objectSpecId, final String identifier, final State state) {
-    	this(objectSpecId, identifier, state, null);
+    	this(objectSpecId, identifier, state, (Version)null);
     }
 
-    public RootOidDefault(ObjectSpecId objectSpecId, final String identifier, final State state, Long version) {
-		Ensure.ensureThatArg(objectSpecId, is(not(nullValue())));
+    public RootOidDefault(ObjectSpecId objectSpecId, final String identifier, final State state, Long versionSequence) {
+        this(objectSpecId, identifier, state, versionSequence, null, null);
+    }
+
+    /**
+     * If specify version sequence, can optionally specify the user that changed the object.  This is used for informational purposes only.
+     */
+    public RootOidDefault(ObjectSpecId objectSpecId, final String identifier, final State state, Long versionSequence, String versionUser) {
+        this(objectSpecId, identifier, state, versionSequence, versionUser, null);
+    }
+
+    /**
+     * If specify version sequence, can optionally specify utc timestamp that the oid was changed.  This is used for informational purposes only.
+     */
+    public RootOidDefault(ObjectSpecId objectSpecId, final String identifier, final State state, Long versionSequence, Long versionUtcTimestamp) {
+        this(objectSpecId, identifier, state, versionSequence, null, versionUtcTimestamp);
+    }
+    
+    /**
+     * If specify version sequence, can optionally specify user and/or utc timestamp that the oid was changed.  This is used for informational purposes only.
+     */
+    public RootOidDefault(ObjectSpecId objectSpecId, final String identifier, final State state, Long versionSequence, String versionUser, Long versionUtcTimestamp) {
+        this(objectSpecId, identifier, state, Version.create(versionSequence, versionUser, versionUtcTimestamp));
+    }
+
+    public RootOidDefault(ObjectSpecId objectSpecId, final String identifier, final State state, Version version) {
+        Ensure.ensureThatArg(objectSpecId, is(not(nullValue())));
         Ensure.ensureThatArg(identifier, is(not(nullValue())));
         Ensure.ensureThatArg(identifier, is(not(IsisMatchers.contains("#"))));
         Ensure.ensureThatArg(identifier, is(not(IsisMatchers.contains("@"))));
@@ -166,7 +212,6 @@ public final class RootOidDefault implements Serializable, RootOid {
     // ////////////////////////////////////////////
     // asPersistent
     // ////////////////////////////////////////////
-
     
     @Override
     public RootOidDefault asPersistent(String identifier) {
@@ -177,11 +222,57 @@ public final class RootOidDefault implements Serializable, RootOid {
     }
 
 
-	public Long getVersion() {
+    // ////////////////////////////////////////////
+    // Version
+    // ////////////////////////////////////////////
+
+	public Version getVersion() {
 		return version;
 	}
 
+    @Override
+    public void setVersion(Version version) {
+        this.version = version;
+    }
+
+    @Override
+    public Comparison compareAgainst(RootOid other) {
+        if(!equals(other)) {
+            return Comparison.NOT_EQUIVALENT;
+        }
+        if(getVersion() == null || other.getVersion() == null) {
+            return Comparison.EQUIVALENT_BUT_NO_VERSION_INFO;
+        }
+        return getVersion().equals(other.getVersion()) 
+                ? Comparison.EQUIVALENT_AND_UNCHANGED
+                : Comparison.EQUIVALENT_BUT_CHANGED;
+    }
+
+    @Override
+    public void checkLock(String currentUser, RootOid otherOid) {
+        Version otherVersion = otherOid.getVersion();
+        if(version == null || otherVersion == null) {
+            return;
+        }
+        if (version.different(otherVersion)) {
+            LOG.info("concurrency conflict on " + this + " (" + otherVersion + ")");
+            // reset this Oid to latest
+            throw new ConcurrencyException(currentUser, this, version, otherVersion);
+        }
+    }
+
     
+    // ////////////////////////////////////////////
+    // bookmark
+    // ////////////////////////////////////////////
+
+    @Override
+    public Bookmark asBookmark() {
+        final String objectType = getObjectSpecId().asString();
+        final String identifier = getIdentifier();
+        return new Bookmark(objectType, identifier);
+    }
+
     // ////////////////////////////////////////////
     // equals, hashCode
     // ////////////////////////////////////////////
@@ -204,11 +295,11 @@ public final class RootOidDefault implements Serializable, RootOid {
         if (getClass() != other.getClass()) {
             return false;
         }
-        return equals((RootOidDefault) other);
+        return equals((RootOid) other);
     }
 
-    public boolean equals(final RootOidDefault other) {
-        return Objects.equal(objectSpecId, other.objectSpecId) && Objects.equal(identifier, other.identifier) && Objects.equal(state, other.state);
+    public boolean equals(final RootOid other) {
+        return Objects.equal(objectSpecId, other.getObjectSpecId()) && Objects.equal(identifier, other.getIdentifier()) && Objects.equal(isTransient(), other.isTransient());
     }
 
     @Override
@@ -222,5 +313,5 @@ public final class RootOidDefault implements Serializable, RootOid {
     }
 
 
-
+    
 }

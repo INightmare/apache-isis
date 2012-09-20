@@ -29,29 +29,38 @@
 	</wicket:head>
 	<body>
 		<wicket:panel>
-			<span class="entityLink">
+			<div class="entityLink">
 				<input type="text" wicket:id="entityOid"/>
-				<img wicket:id="entityImage" class="entityImage" width="16" height="16"/>
+				
 				<select wicket:id="choices"/>
-				<span wicket:id="entityLinkWrapper">
-					<a href="#" wicket:id="entityLink">
-						<span wicket:id="entityTitle">[property or parameter value]</span>
+				<div>
+					<span wicket:id="entityIconAndTitle">[icon and title]</span>
+					<span wicket:id="entityTitleNull">(null)</span>
+					<a href="#" wicket:id="entityDetailsLink" class="entityDetailsLink">
+						<span wicket:id="entityDetailsLinkLabel">[+/-]</span>
 					</a>
-				</span>
-				<a href="#" wicket:id="entityDetailsLink" class="entityDetailsLink"><span wicket:id="entityDetailsLinkLabel">show/hide</span></a>
-				<span wicket:id="entityTitleNull">(null)</span>
-				<table wicket:id="findUsing" class="findUsing">
-		   			<tbody>
-		      			<tr>
-							<td>
-				      			<span wicket:id="action">[find using...]</span>
-			      			</td>
-		     			</tr>
-	     			</tbody>
-	  			</table>
-	  			<div wicket:id="entityDetails">
+					<div class="findUsingClearDetails">
+						<table wicket:id="findUsing" class="findUsing">
+				   			<tbody>
+				      			<tr>
+									<td>
+						      			<span wicket:id="action">[find using...]</span>
+					      			</td>
+				     			</tr>
+			     			</tbody>
+			  			</table>
+							<a href="#" wicket:id="entityClearLink" class="entityClearLink">
+								<span>clear</span>
+							</a>
+					</div>
+				    <div class="clear"/>
+		  			<div wicket:id="entityDetails" class="entityDetails">
+				</div>
 	  			</div>
-			</span>
+			    <div class="feedbackPanel">
+			        <span wicket:id="feedback"/>
+			    </div>
+			</div>
 		</wicket:panel>
 	</body>
 </html>

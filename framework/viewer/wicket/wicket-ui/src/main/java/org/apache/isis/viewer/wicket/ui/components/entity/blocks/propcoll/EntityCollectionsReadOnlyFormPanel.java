@@ -24,22 +24,17 @@ import java.util.List;
 import org.apache.wicket.Component;
 import org.apache.wicket.Session;
 import org.apache.wicket.ajax.AjaxRequestTarget;
-import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.feedback.FeedbackMessage;
 import org.apache.wicket.feedback.IFeedbackMessageFilter;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
-import org.apache.wicket.markup.html.form.Button;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.FormComponent;
-import org.apache.wicket.markup.html.form.IFormVisitorParticipant;
-import org.apache.wicket.markup.html.form.FormComponent.IVisitor;
 import org.apache.wicket.markup.html.form.validation.AbstractFormValidator;
-import org.apache.wicket.markup.html.panel.ComponentFeedbackPanel;
-import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.markup.repeater.RepeatingView;
 import org.apache.wicket.model.Model;
 
+import org.apache.isis.applib.annotation.Where;
 import org.apache.isis.applib.filter.Filter;
 import org.apache.isis.applib.filter.Filters;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
@@ -49,16 +44,12 @@ import org.apache.isis.core.metamodel.spec.feature.ObjectAssociationFilters;
 import org.apache.isis.core.metamodel.spec.feature.OneToManyAssociation;
 import org.apache.isis.core.metamodel.spec.feature.OneToOneAssociation;
 import org.apache.isis.core.progmodel.facets.object.validate.ValidateObjectFacet;
-import org.apache.isis.runtimes.dflt.runtime.memento.Memento;
 import org.apache.isis.viewer.wicket.model.mementos.PropertyMemento;
 import org.apache.isis.viewer.wicket.model.models.EntityCollectionModel;
 import org.apache.isis.viewer.wicket.model.models.EntityModel;
 import org.apache.isis.viewer.wicket.model.models.ScalarModel;
 import org.apache.isis.viewer.wicket.ui.ComponentType;
 import org.apache.isis.viewer.wicket.ui.components.collection.CollectionPanel;
-import org.apache.isis.viewer.wicket.ui.components.entity.blocks.propcoll.EntityPropertiesAndOrCollectionsPanel.PropCollForm;
-import org.apache.isis.viewer.wicket.ui.components.entity.blocks.propcoll.EntityPropertiesAndOrCollectionsPanel.Render;
-import org.apache.isis.viewer.wicket.ui.components.widgets.formcomponent.CancelHintRequired;
 import org.apache.isis.viewer.wicket.ui.panels.FormAbstract;
 import org.apache.isis.viewer.wicket.ui.panels.PanelAbstract;
 import org.apache.isis.viewer.wicket.ui.util.EvenOrOddCssClassAppenderFactory;
@@ -187,13 +178,14 @@ public class EntityCollectionsReadOnlyFormPanel extends PanelAbstract<EntityMode
 
         @SuppressWarnings("unchecked")
 		private Filter<ObjectAssociation> visibleAssociationFilter(final ObjectAdapter adapter) {
-            return Filters.and(ObjectAssociationFilters.COLLECTIONS, ObjectAssociationFilters.dynamicallyVisible(getAuthenticationSession(), adapter));
+            return Filters.and(ObjectAssociationFilters.COLLECTIONS, ObjectAssociationFilters.dynamicallyVisible(getAuthenticationSession(), adapter, Where.PARENTED_TABLES));
         }
 
 
         private void requestRepaintPanel(final AjaxRequestTarget target) {
             if (target != null) {
-                target.addComponent(owningPanel);
+                //target.addComponent(owningPanel);
+                target.add(owningPanel);
             }
         }
 
@@ -234,15 +226,17 @@ public class EntityCollectionsReadOnlyFormPanel extends PanelAbstract<EntityMode
 
         @Override
         protected void onValidate() {
-            Session.get().getFeedbackMessages().clear(new IFeedbackMessageFilter() {
-
-                private static final long serialVersionUID = 1L;
-
-                @Override
-                public boolean accept(final FeedbackMessage message) {
-                    return message.getReporter() == owningPanel;
-                }
-            });
+            // 6.0.0 - no longer required because feedback messages are automatically cleaned up
+            // see https://cwiki.apache.org/WICKET/migration-to-wicket-60.html#MigrationtoWicket6.0-FeedbackStorageRefactoring
+//            Session.get().getFeedbackMessages().clear(new IFeedbackMessageFilter() {
+//
+//                private static final long serialVersionUID = 1L;
+//
+//                @Override
+//                public boolean accept(final FeedbackMessage message) {
+//                    return message.getReporter() == owningPanel;
+//                }
+//            });
             super.onValidate();
         }
     }

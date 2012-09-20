@@ -19,12 +19,13 @@
 
 package org.apache.isis.viewer.wicket.ui.components.scalars.value;
 
+import org.apache.wicket.Component;
+import org.apache.wicket.model.IModel;
+
 import org.apache.isis.core.metamodel.facets.object.value.ValueFacet;
 import org.apache.isis.viewer.wicket.model.models.ScalarModel;
 import org.apache.isis.viewer.wicket.ui.ComponentFactory;
 import org.apache.isis.viewer.wicket.ui.components.scalars.ComponentFactoryScalarAbstract;
-import org.apache.wicket.Component;
-import org.apache.wicket.model.IModel;
 
 /**
  * {@link ComponentFactory} for the {@link ValuePanel}.
@@ -43,8 +44,8 @@ public class ValuePanelFactory extends ComponentFactoryScalarAbstract {
             return ApplicationAdvice.DOES_NOT_APPLY;
         }
         final ScalarModel scalarModel = (ScalarModel) model;
-        final ValueFacet facet = scalarModel.getTypeOfSpecification().getFacet(ValueFacet.class);
-        return appliesIf(facet != null);
+        final ValueFacet valueFacet = scalarModel.getTypeOfSpecification().getFacet(ValueFacet.class);
+        return appliesIf(scalarModel.getChoices().isEmpty() && valueFacet != null);
     }
 
     @Override

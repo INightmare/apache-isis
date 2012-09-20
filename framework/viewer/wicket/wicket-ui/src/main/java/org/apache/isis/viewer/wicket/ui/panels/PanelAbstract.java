@@ -21,6 +21,17 @@ package org.apache.isis.viewer.wicket.ui.panels;
 
 import java.util.List;
 
+import com.google.inject.Inject;
+
+import org.apache.wicket.Component;
+import org.apache.wicket.Session;
+import org.apache.wicket.markup.head.CssHeaderItem;
+import org.apache.wicket.markup.head.IHeaderResponse;
+import org.apache.wicket.markup.html.IHeaderContributor;
+import org.apache.wicket.markup.html.panel.Panel;
+import org.apache.wicket.model.IModel;
+import org.apache.wicket.request.resource.CssResourceReference;
+
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.commons.authentication.AuthenticationSessionProvider;
 import org.apache.isis.core.commons.authentication.AuthenticationSessionProviderAware;
@@ -32,15 +43,6 @@ import org.apache.isis.viewer.wicket.model.isis.PersistenceSessionProvider;
 import org.apache.isis.viewer.wicket.ui.ComponentType;
 import org.apache.isis.viewer.wicket.ui.app.registry.ComponentFactoryRegistry;
 import org.apache.isis.viewer.wicket.ui.util.Components;
-import org.apache.wicket.Component;
-import org.apache.wicket.ResourceReference;
-import org.apache.wicket.Session;
-import org.apache.wicket.markup.html.IHeaderContributor;
-import org.apache.wicket.markup.html.IHeaderResponse;
-import org.apache.wicket.markup.html.panel.Panel;
-import org.apache.wicket.model.IModel;
-
-import com.google.inject.Inject;
 
 /**
  * Convenience adapter for {@link Panel}s built up using {@link ComponentType}s.
@@ -56,6 +58,8 @@ public abstract class PanelAbstract<T extends IModel<?>> extends Panel implement
      * 
      * @see #setComponentFactoryRegistry(ComponentFactoryRegistry)
      */
+    @javax.inject.Inject
+    @Inject
     private ComponentFactoryRegistry componentFactoryRegistry;
 
     public PanelAbstract(final ComponentType componentType) {
@@ -83,7 +87,7 @@ public abstract class PanelAbstract<T extends IModel<?>> extends Panel implement
     }
 
     @SuppressWarnings("unchecked")
-    protected T getModel() {
+    public T getModel() {
         return (T) getDefaultModel();
     }
 
@@ -128,7 +132,8 @@ public abstract class PanelAbstract<T extends IModel<?>> extends Panel implement
      */
     protected void renderHead(final IHeaderResponse response, final Class<?> cls) {
         final String url = cls.getSimpleName() + ".css";
-        response.renderCSSReference(new ResourceReference(cls, url));
+        //response.renderCSSReference(new ResourceReference(cls, url));
+        response.render(CssHeaderItem.forReference(new CssResourceReference(cls, url)));
     }
 
     // ///////////////////////////////////////////////////////////////////
@@ -160,7 +165,7 @@ public abstract class PanelAbstract<T extends IModel<?>> extends Panel implement
         return IsisContext.getPersistenceSession();
     }
 
-    protected AdapterManager getAdapterManager() {
+    public AdapterManager getAdapterManager() {
         return IsisContext.getPersistenceSession().getAdapterManager();
     }
 

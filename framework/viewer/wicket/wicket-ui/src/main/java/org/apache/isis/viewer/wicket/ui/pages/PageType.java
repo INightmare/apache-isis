@@ -38,9 +38,9 @@ import org.apache.isis.viewer.wicket.ui.pages.home.HomePage;
 public enum PageType {
     SIGN_IN(WebPage.class), 
     HOME(HomePage.class), 
-    //ABOUT(AboutPage.class), 
+    ABOUT(AboutPage.class), 
     ENTITY(EntityPage.class), 
-    ACTION(ActionPage.class);
+    ACTION(ActionPage.class); 
 
     private Class<? extends Page> superClass;
 

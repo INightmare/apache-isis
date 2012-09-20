@@ -39,8 +39,6 @@ public class PasswordValueSemanticsProvider extends ValueSemanticsProviderAndFac
 
     private static final Password DEFAULT_VALUE = null; // no default
     private static final int TYPICAL_LENGTH = 12;
-    private static final boolean IMMUTABLE = true;
-    private static final boolean EQUAL_BY_CONTENT = true;
 
     /**
      * Required because implementation of {@link Parser} and {@link EncoderDecoder}.
@@ -51,7 +49,7 @@ public class PasswordValueSemanticsProvider extends ValueSemanticsProviderAndFac
 
     public PasswordValueSemanticsProvider(final FacetHolder holder, final IsisConfiguration configuration,
         final ValueSemanticsProviderContext context) {
-        super(type(), holder, Password.class, TYPICAL_LENGTH, IMMUTABLE, EQUAL_BY_CONTENT, DEFAULT_VALUE,
+        super(type(), holder, Password.class, TYPICAL_LENGTH, Immutability.IMMUTABLE, EqualByContent.HONOURED, DEFAULT_VALUE,
             configuration, context);
     }
 

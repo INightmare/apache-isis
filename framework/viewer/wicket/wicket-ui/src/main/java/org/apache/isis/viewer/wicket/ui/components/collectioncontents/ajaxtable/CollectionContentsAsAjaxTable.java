@@ -28,6 +28,9 @@ import org.apache.wicket.extensions.markup.html.repeater.data.table.IColumn;
 import org.apache.wicket.extensions.markup.html.repeater.util.SortableDataProvider;
 import org.apache.wicket.model.Model;
 
+import org.apache.isis.applib.annotation.Where;
+import org.apache.isis.applib.filter.Filter;
+import org.apache.isis.applib.filter.Filters;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
 import org.apache.isis.core.metamodel.spec.ObjectSpecification;
 import org.apache.isis.core.metamodel.spec.feature.ObjectAssociation;
@@ -47,7 +50,7 @@ import org.apache.isis.viewer.wicket.ui.panels.PanelAbstract;
 public class CollectionContentsAsAjaxTable extends PanelAbstract<EntityCollectionModel> {
 
     private static final long serialVersionUID = 1L;
-
+    
     public CollectionContentsAsAjaxTable(final String id, final EntityCollectionModel model) {
         super(id, model);
 
@@ -57,34 +60,39 @@ public class CollectionContentsAsAjaxTable extends PanelAbstract<EntityCollectio
     private void buildGui() {
         final EntityCollectionModel model = getModel();
 
-        final List<IColumn<ObjectAdapter>> columns = Lists.newArrayList();
+        final List<IColumn<ObjectAdapter,String>> columns = Lists.newArrayList();
 
         addTitleColumn(columns);
         addPropertyColumnsIfRequired(columns);
         addSelectedButtonIfRequired(columns);
 
-        final SortableDataProvider<ObjectAdapter> dataProvider = new CollectionContentsSortableDataProvider(model);
-        final AjaxFallbackDefaultDataTable<ObjectAdapter> dataTable = new AjaxFallbackDefaultDataTable<ObjectAdapter>("table", columns, dataProvider, 8);
+        final SortableDataProvider<ObjectAdapter,String> dataProvider = new CollectionContentsSortableDataProvider(model);
+        final AjaxFallbackDefaultDataTable<ObjectAdapter,String> dataTable = new AjaxFallbackDefaultDataTable<ObjectAdapter,String>("table", columns, dataProvider, model.getPageSize());
         add(dataTable);
     }
 
-    private void addTitleColumn(final List<IColumn<ObjectAdapter>> columns) {
+    private void addTitleColumn(final List<IColumn<ObjectAdapter,String>> columns) {
         columns.add(new ObjectAdapterTitleColumn());
     }
 
-    private void addPropertyColumnsIfRequired(final List<IColumn<ObjectAdapter>> columns) {
+    private void addPropertyColumnsIfRequired(final List<IColumn<ObjectAdapter,String>> columns) {
         final ObjectSpecification typeOfSpec = getModel().getTypeOfSpecification();
         if (getModel().hasSelectionHandler()) {
             return;
         }
-        final List<? extends ObjectAssociation> propertyList = typeOfSpec.getAssociations(ObjectAssociationFilters.PROPERTIES);
+        
+        @SuppressWarnings("unchecked")
+        final Filter<ObjectAssociation> filter = Filters.and(
+                ObjectAssociationFilters.PROPERTIES, 
+                ObjectAssociationFilters.staticallyVisible(getModel().isParented()? Where.PARENTED_TABLES: Where.STANDALONE_TABLES));
+        final List<? extends ObjectAssociation> propertyList = typeOfSpec.getAssociations(filter);
         for (final ObjectAssociation property : propertyList) {
             final ColumnAbstract<ObjectAdapter> nopc = createObjectAdapterPropertyColumn(property);
             columns.add(nopc);
         }
     }
 
-    private void addSelectedButtonIfRequired(final List<IColumn<ObjectAdapter>> columns) {
+    private void addSelectedButtonIfRequired(final List<IColumn<ObjectAdapter,String>> columns) {
         if (!getModel().hasSelectionHandler()) {
             return;
         }

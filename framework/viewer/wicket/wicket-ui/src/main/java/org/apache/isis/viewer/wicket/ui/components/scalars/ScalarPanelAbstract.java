@@ -25,7 +25,11 @@ import org.apache.wicket.markup.html.form.FormComponentLabel;
 import org.apache.wicket.markup.html.form.LabeledWebMarkupContainer;
 import org.apache.wicket.model.Model;
 
+import org.apache.isis.applib.annotation.Where;
+import org.apache.isis.viewer.wicket.model.models.EntityModel.RenderingHint;
 import org.apache.isis.viewer.wicket.model.models.ScalarModel;
+import org.apache.isis.viewer.wicket.ui.components.scalars.ScalarPanelAbstract.Rendering;
+import org.apache.isis.viewer.wicket.ui.components.scalars.TextFieldValueModel.ScalarModelProvider;
 import org.apache.isis.viewer.wicket.ui.panels.PanelAbstract;
 
 /**
@@ -33,14 +37,14 @@ import org.apache.isis.viewer.wicket.ui.panels.PanelAbstract;
  * their backing model.
  * 
  * <p>
- * Supports the concept of being {@link Format#COMPACT} (eg within a table) or
- * {@link Format#REGULAR regular} (eg within a form).
+ * Supports the concept of being {@link Rendering#COMPACT} (eg within a table) or
+ * {@link Rendering#REGULAR regular} (eg within a form).
  */
-public abstract class ScalarPanelAbstract extends PanelAbstract<ScalarModel> {
+public abstract class ScalarPanelAbstract extends PanelAbstract<ScalarModel> implements ScalarModelProvider {
 
     private static final long serialVersionUID = 1L;
 
-    public enum Format {
+    public enum Rendering {
         /**
          * Does not show labels, eg for use in tables
          */
@@ -53,6 +57,11 @@ public abstract class ScalarPanelAbstract extends PanelAbstract<ScalarModel> {
             @Override
             public void buildGui(final ScalarPanelAbstract panel) {
                 panel.getComponentForRegular().setVisible(false);
+            }
+
+            @Override
+            public Where getWhere() {
+                return Where.PARENTED_TABLES;
             }
         },
         /**
@@ -68,14 +77,23 @@ public abstract class ScalarPanelAbstract extends PanelAbstract<ScalarModel> {
             public void buildGui(final ScalarPanelAbstract panel) {
                 panel.getLabelForCompact().setVisible(false);
             }
+
+            @Override
+            public Where getWhere() {
+                return Where.OBJECT_FORMS;
+            }
         };
 
         public abstract String getLabelCaption(LabeledWebMarkupContainer labeledContainer);
 
         public abstract void buildGui(ScalarPanelAbstract panel);
-    }
 
-    private Format format;
+        public abstract Where getWhere();
+
+        private static Rendering renderingFor(RenderingHint renderingHint) {
+            return renderingHint==RenderingHint.COMPACT? Rendering.COMPACT: Rendering.REGULAR;
+        }
+    }
 
     protected Component componentIfCompact;
     private Component componentIfRegular;
@@ -83,16 +101,11 @@ public abstract class ScalarPanelAbstract extends PanelAbstract<ScalarModel> {
 
     public ScalarPanelAbstract(final String id, final ScalarModel scalarModel) {
         super(id, scalarModel);
-        setFormat(Format.REGULAR);
         this.scalarModel = scalarModel;
     }
 
-    protected Format getFormat() {
-        return format;
-    }
-
-    public void setFormat(final Format format) {
-        this.format = format;
+    protected Rendering getRendering() {
+        return Rendering.renderingFor(getModel().getRenderingHint());
     }
 
     protected Component getLabelForCompact() {
@@ -112,7 +125,7 @@ public abstract class ScalarPanelAbstract extends PanelAbstract<ScalarModel> {
         if (scalarModel.isViewMode()) {
             onBeforeRenderWhenViewMode();
         } else {
-            final String disableReasonIfAny = scalarModel.disable();
+            final String disableReasonIfAny = scalarModel.disable(getRendering().getWhere());
             if (disableReasonIfAny != null) {
                 onBeforeRenderWhenDisabled(disableReasonIfAny);
             } else {
@@ -127,28 +140,29 @@ public abstract class ScalarPanelAbstract extends PanelAbstract<ScalarModel> {
      * 
      * <p>
      * This design allows the panel to be configured first, using
-     * {@link #setFormat(Format)}.
+     * {@link #setFormat(Rendering)}.
      * 
      * @see #onBeforeRender()
-     * @see #setFormat(Format)
+     * @see #setFormat(Rendering)
      */
     private void buildGui() {
         componentIfRegular = addComponentForRegular();
         componentIfCompact = addComponentForCompact();
-        getFormat().buildGui(this);
+        getRendering().buildGui(this);
         addCssForMetaModel();
     }
+
 
     private void addCssForMetaModel() {
         final String cssForMetaModel = getModel().getLongName();
         if (cssForMetaModel != null) {
-            add(new AttributeAppender("class", true, Model.of(cssForMetaModel), " "));
+            add(new AttributeAppender("class", Model.of(cssForMetaModel), " "));
         }
     }
 
     /**
      * Mandatory hook method to build the component to render the model when in
-     * {@link Format#REGULAR regular} format.
+     * {@link Rendering#REGULAR regular} format.
      */
     protected abstract FormComponentLabel addComponentForRegular();
 

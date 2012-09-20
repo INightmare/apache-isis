@@ -28,6 +28,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.apache.isis.applib.annotation.When;
+import org.apache.isis.applib.annotation.Where;
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
 import org.apache.isis.core.metamodel.consent.InteractionInvocationMethod;
@@ -70,7 +72,7 @@ public class ObjectAssociationAbstractTest {
 
     @Before
     public void setup() {
-        facetedMethod = FacetedMethod.createProperty(Customer.class, "firstName");
+        facetedMethod = FacetedMethod.createForProperty(Customer.class, "firstName");
         
         objectAssociation = new ObjectAssociationAbstract(facetedMethod, FeatureType.PROPERTY, objectSpecification, new ObjectMemberContext(null, null, null, null, null)) {
 
@@ -99,12 +101,12 @@ public class ObjectAssociationAbstractTest {
             }
 
             @Override
-            public UsabilityContext<?> createUsableInteractionContext(final AuthenticationSession session, final InteractionInvocationMethod invocationMethod, final ObjectAdapter target) {
+            public UsabilityContext<?> createUsableInteractionContext(final AuthenticationSession session, final InteractionInvocationMethod invocationMethod, final ObjectAdapter target, Where where) {
                 return null;
             }
 
             @Override
-            public VisibilityContext<?> createVisibleInteractionContext(final AuthenticationSession session, final InteractionInvocationMethod invocationMethod, final ObjectAdapter targetObjectAdapter) {
+            public VisibilityContext<?> createVisibleInteractionContext(final AuthenticationSession session, final InteractionInvocationMethod invocationMethod, final ObjectAdapter targetObjectAdapter, Where where) {
                 return null;
             }
 
@@ -149,13 +151,6 @@ public class ObjectAssociationAbstractTest {
     @Test
     public void notHidden() throws Exception {
         assertFalse(objectAssociation.isAlwaysHidden());
-    }
-
-    @Test
-    public void hidden() throws Exception {
-        final HiddenFacet mockFacet = mockFacetIgnoring(HiddenFacet.class);
-        facetedMethod.addFacet(mockFacet);
-        assertTrue(objectAssociation.isAlwaysHidden());
     }
 
     @Test

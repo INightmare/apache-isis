@@ -23,7 +23,6 @@ import static org.apache.isis.core.commons.ensure.Ensure.ensureThatArg;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -74,11 +73,13 @@ import org.apache.isis.core.metamodel.specloader.facetprocessor.FacetProcessor;
 import org.apache.isis.core.metamodel.specloader.specimpl.CreateObjectContext;
 import org.apache.isis.core.metamodel.specloader.specimpl.FacetedMethodsBuilderContext;
 import org.apache.isis.core.metamodel.specloader.specimpl.IntrospectionContext;
+import org.apache.isis.core.metamodel.specloader.specimpl.ObjectSpecificationAbstract;
+import org.apache.isis.core.metamodel.specloader.specimpl.ObjectSpecificationAbstract.IntrospectionState;
 import org.apache.isis.core.metamodel.specloader.specimpl.dflt.ObjectSpecificationDefault;
 import org.apache.isis.core.metamodel.specloader.specimpl.objectlist.ObjectSpecificationForFreeStandingList;
 import org.apache.isis.core.metamodel.specloader.traverser.SpecificationTraverser;
-import org.apache.isis.core.metamodel.specloader.validator.MetaModelInvalidException;
 import org.apache.isis.core.metamodel.specloader.validator.MetaModelValidator;
+import org.apache.isis.core.metamodel.specloader.validator.ValidationFailures;
 
 /**
  * Builds the meta-model.
@@ -253,7 +254,11 @@ public class ObjectReflectorDefault implements SpecificationLoaderSpi, Applicati
 
         // prime cache and validate
         primeCache();
-        metaModelValidator.validate();
+        
+        ValidationFailures validationFailures = new ValidationFailures();
+        metaModelValidator.validate(validationFailures);
+        
+        validationFailures.assertNone();
         
         cacheBySpecId();
     }
@@ -370,7 +375,7 @@ public class ObjectReflectorDefault implements SpecificationLoaderSpi, Applicati
             // infinite loops
             specificationCache.cache(typeName, specification);
 
-            introspectSpecificationIfRequired(specification);
+            introspectIfRequired(specification);
 
             return specification;
         }
@@ -453,11 +458,29 @@ public class ObjectReflectorDefault implements SpecificationLoaderSpi, Applicati
         return getCache().get(fullyQualifiedClassName) != null;
     }
 
-    private ObjectSpecification introspectSpecificationIfRequired(final ObjectSpecification spec) {
-        if (!spec.isIntrospected()) {
-            spec.introspectTypeHierarchyAndMembers();
+    public ObjectSpecification introspectIfRequired(final ObjectSpecification spec) {
+        final ObjectSpecificationAbstract specSpi = (ObjectSpecificationAbstract)spec;
+        final IntrospectionState introspectionState = specSpi.getIntrospectionState();
+
+        if (introspectionState == IntrospectionState.NOT_INTROSPECTED) {
+            specSpi.setIntrospectionState(IntrospectionState.BEING_INTROSPECTED);
+            
+            specSpi.introspectTypeHierarchyAndMembers();
             facetDecoratorSet.decorate(spec);
-            spec.updateFromFacetValues();
+            specSpi.updateFromFacetValues();
+            
+            specSpi.setIntrospectionState(IntrospectionState.INTROSPECTED);
+        } else if (introspectionState == IntrospectionState.BEING_INTROSPECTED) {
+            // nothing to do
+
+            specSpi.introspectTypeHierarchyAndMembers();
+            facetDecoratorSet.decorate(spec);
+            specSpi.updateFromFacetValues();
+            
+            specSpi.setIntrospectionState(IntrospectionState.INTROSPECTED);
+
+        } else if (introspectionState == IntrospectionState.INTROSPECTED) {
+            // nothing to do
         }
         return spec;
     }
@@ -615,7 +638,7 @@ public class ObjectReflectorDefault implements SpecificationLoaderSpi, Applicati
     }
 
     @Override
-    public void validateSpecifications() {
+    public void validateSpecifications(ValidationFailures validationFailures) {
         final Map<ObjectSpecId, ObjectSpecification> specById = Maps.newHashMap();
         for (final ObjectSpecification objSpec : allSpecifications()) {
             final ObjectSpecId objectSpecId = objSpec.getSpecId();
@@ -626,7 +649,7 @@ public class ObjectReflectorDefault implements SpecificationLoaderSpi, Applicati
             if (existingSpec == null) {
                 continue;
             }
-            throw new MetaModelInvalidException(MessageFormat.format("Cannot have two entities with same object type (@ObjectType facet or equivalent) Value; " + "both {0} and {1} are annotated with value of ''{2}''.", existingSpec.getFullIdentifier(), objSpec.getFullIdentifier(), objectSpecId));
+            validationFailures.add("Cannot have two entities with same object type (@ObjectType facet or equivalent) Value; " + "both {0} and {1} are annotated with value of ''{2}''.", existingSpec.getFullIdentifier(), objSpec.getFullIdentifier(), objectSpecId);
         }
     }
 

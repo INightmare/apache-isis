@@ -29,13 +29,14 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.apache.isis.applib.annotation.When;
+import org.apache.isis.applib.annotation.Where;
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
 import org.apache.isis.core.metamodel.consent.Consent;
 import org.apache.isis.core.metamodel.consent.InteractionInvocationMethod;
 import org.apache.isis.core.metamodel.facetapi.FeatureType;
 import org.apache.isis.core.metamodel.facets.FacetedMethod;
-import org.apache.isis.core.metamodel.facets.When;
 import org.apache.isis.core.metamodel.facets.describedas.DescribedAsFacetAbstract;
 import org.apache.isis.core.metamodel.facets.named.NamedFacetAbstract;
 import org.apache.isis.core.metamodel.interactions.PropertyUsabilityContext;
@@ -46,13 +47,13 @@ import org.apache.isis.core.metamodel.spec.Instance;
 import org.apache.isis.core.metamodel.spec.ObjectSpecification;
 import org.apache.isis.core.metamodel.spec.feature.ObjectMemberContext;
 import org.apache.isis.core.metamodel.specloader.specimpl.ObjectMemberAbstract;
-import org.apache.isis.core.progmodel.facets.members.disable.DisableForSessionFacetAbstract;
-import org.apache.isis.core.progmodel.facets.members.hide.HiddenFacetAbstract;
-import org.apache.isis.core.progmodel.facets.members.hide.HiddenFacetImpl;
-import org.apache.isis.core.progmodel.facets.members.hide.HiddenFacetNever;
-import org.apache.isis.core.progmodel.facets.members.hide.HideForContextFacetNone;
-import org.apache.isis.core.progmodel.facets.members.hide.HideForSessionFacetAbstract;
-import org.apache.isis.core.progmodel.facets.members.hide.staticmethod.HiddenFacetAlways;
+import org.apache.isis.core.progmodel.facets.members.disabled.DisableForSessionFacetAbstract;
+import org.apache.isis.core.progmodel.facets.members.hidden.HiddenFacetAbstract;
+import org.apache.isis.core.progmodel.facets.members.hidden.HiddenFacetImpl;
+import org.apache.isis.core.progmodel.facets.members.hidden.HiddenFacetNever;
+import org.apache.isis.core.progmodel.facets.members.hidden.HideForContextFacetNone;
+import org.apache.isis.core.progmodel.facets.members.hidden.HideForSessionFacetAbstract;
+import org.apache.isis.core.progmodel.facets.members.hidden.staticmethod.HiddenFacetAlwaysEverywhere;
 import org.apache.isis.core.testsupport.jmock.JUnitRuleMockery2;
 import org.apache.isis.core.testsupport.jmock.JUnitRuleMockery2.Mode;
 import org.apache.isis.runtimes.dflt.runtime.persistence.objectstore.transaction.PojoAdapterBuilder;
@@ -93,7 +94,7 @@ public class ObjectMemberAbstractTest {
                 return null;
             }
         });
-        final Consent usable = testMember.isUsable(null, persistentAdapter);
+        final Consent usable = testMember.isUsable(null, persistentAdapter, Where.ANYWHERE);
         final boolean allowed = usable.isAllowed();
         assertTrue(allowed);
     }
@@ -101,37 +102,37 @@ public class ObjectMemberAbstractTest {
     @Test
     public void testVisibleWhenHiddenFacetSetToAlways() {
         testMember.addFacet(new HideForContextFacetNone(testMember));
-        testMember.addFacet(new HiddenFacetAbstract(When.ALWAYS, testMember) {
+        testMember.addFacet(new HiddenFacetAbstract(When.ALWAYS, Where.ANYWHERE, testMember) {
             @Override
-            public String hiddenReason(final ObjectAdapter target) {
+            public String hiddenReason(final ObjectAdapter target, final Where whereContext) {
                 return null;
             }
         });
-        final Consent visible = testMember.isVisible(null, persistentAdapter);
+        final Consent visible = testMember.isVisible(null, persistentAdapter, Where.ANYWHERE);
         assertTrue(visible.isAllowed());
     }
 
     @Test
     public void testVisibleWhenTargetPersistentAndHiddenFacetSetToOncePersisted() {
         testMember.addFacet(new HideForContextFacetNone(testMember));
-        testMember.addFacet(new HiddenFacetImpl(When.ONCE_PERSISTED, testMember));
-        assertFalse(testMember.isVisible(null, persistentAdapter).isAllowed());
+        testMember.addFacet(new HiddenFacetImpl(When.ONCE_PERSISTED, Where.ANYWHERE, testMember));
+        assertFalse(testMember.isVisible(null, persistentAdapter, Where.ANYWHERE).isAllowed());
     }
 
     @Test
     public void testVisibleWhenTargetPersistentAndHiddenFacetSetToUntilPersisted() {
         testMember.addFacet(new HideForContextFacetNone(testMember));
-        testMember.addFacet(new HiddenFacetImpl(When.UNTIL_PERSISTED, testMember));
-        final Consent visible = testMember.isVisible(null, persistentAdapter);
+        testMember.addFacet(new HiddenFacetImpl(When.UNTIL_PERSISTED, Where.ANYWHERE, testMember));
+        final Consent visible = testMember.isVisible(null, persistentAdapter, Where.ANYWHERE);
         assertTrue(visible.isAllowed());
     }
 
     @Test
     public void testVisibleWhenTargetTransientAndHiddenFacetSetToUntilPersisted() {
         testMember.addFacet(new HideForContextFacetNone(testMember));
-        testMember.addFacet(new HiddenFacetImpl(When.UNTIL_PERSISTED, testMember));
+        testMember.addFacet(new HiddenFacetImpl(When.UNTIL_PERSISTED, Where.ANYWHERE, testMember));
         
-        final Consent visible = testMember.isVisible(null, transientAdapter);
+        final Consent visible = testMember.isVisible(null, transientAdapter, Where.ANYWHERE);
         assertFalse(visible.isAllowed());
     }
 
@@ -139,19 +140,19 @@ public class ObjectMemberAbstractTest {
     public void testVisibleDeclarativelyByDefault() {
         testMember.addFacet(new HiddenFacetNever(testMember) {
         });
-        assertTrue(testMember.isVisible(null, persistentAdapter).isAllowed());
+        assertTrue(testMember.isVisible(null, persistentAdapter, Where.ANYWHERE).isAllowed());
     }
 
     @Test
     public void testVisibleDeclaratively() {
-        testMember.addFacet(new HiddenFacetAlways(testMember) {
+        testMember.addFacet(new HiddenFacetAlwaysEverywhere(testMember) {
         });
-        assertFalse(testMember.isVisible(null, persistentAdapter).isAllowed());
+        assertFalse(testMember.isVisible(null, persistentAdapter, Where.ANYWHERE).isAllowed());
     }
 
     @Test
     public void testVisibleForSessionByDefault() {
-        final Consent visible = testMember.isVisible(null, persistentAdapter);
+        final Consent visible = testMember.isVisible(null, persistentAdapter, Where.ANYWHERE);
         assertTrue(visible.isAllowed());
     }
 
@@ -163,7 +164,7 @@ public class ObjectMemberAbstractTest {
                 return "Hidden";
             }
         });
-        assertFalse(testMember.isVisible(null, persistentAdapter).isAllowed());
+        assertFalse(testMember.isVisible(null, persistentAdapter, Where.ANYWHERE).isAllowed());
     }
 
     @Test
@@ -174,7 +175,7 @@ public class ObjectMemberAbstractTest {
                 return "hidden";
             }
         });
-        assertFalse(testMember.isVisible(null, persistentAdapter).isAllowed());
+        assertFalse(testMember.isVisible(null, persistentAdapter, Where.ANYWHERE).isAllowed());
     }
 
     @Test
@@ -205,7 +206,7 @@ class ObjectMemberAbstractImpl extends ObjectMemberAbstract {
     }
 
     protected ObjectMemberAbstractImpl(final String id) {
-        super(FacetedMethod.createProperty(Customer.class, "firstName"), FeatureType.PROPERTY, new ObjectMemberContext(null, null, null, null, null));
+        super(FacetedMethod.createForProperty(Customer.class, "firstName"), FeatureType.PROPERTY, new ObjectMemberContext(null, null, null, null, null));
     }
 
     @Override
@@ -223,13 +224,13 @@ class ObjectMemberAbstractImpl extends ObjectMemberAbstract {
     }
 
     @Override
-    public UsabilityContext<?> createUsableInteractionContext(final AuthenticationSession session, final InteractionInvocationMethod invocationMethod, final ObjectAdapter target) {
-        return new PropertyUsabilityContext(session, invocationMethod, target, getIdentifier());
+    public UsabilityContext<?> createUsableInteractionContext(final AuthenticationSession session, final InteractionInvocationMethod invocationMethod, final ObjectAdapter target, Where where) {
+        return new PropertyUsabilityContext(session, invocationMethod, target, getIdentifier(), where);
     }
 
     @Override
-    public VisibilityContext<?> createVisibleInteractionContext(final AuthenticationSession session, final InteractionInvocationMethod invocationMethod, final ObjectAdapter targetObjectAdapter) {
-        return new PropertyVisibilityContext(session, invocationMethod, targetObjectAdapter, getIdentifier());
+    public VisibilityContext<?> createVisibleInteractionContext(final AuthenticationSession session, final InteractionInvocationMethod invocationMethod, final ObjectAdapter targetObjectAdapter, Where where) {
+        return new PropertyVisibilityContext(session, invocationMethod, targetObjectAdapter, getIdentifier(), where);
     }
 
     // /////////////////////////////////////////////////////////////

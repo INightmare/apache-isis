@@ -25,11 +25,12 @@ import org.apache.isis.applib.annotation.DescribedAs;
 import org.apache.isis.core.metamodel.facetapi.FacetHolder;
 import org.apache.isis.core.metamodel.facetapi.FacetUtil;
 import org.apache.isis.core.metamodel.facetapi.FeatureType;
-import org.apache.isis.core.metamodel.facets.AnnotationBasedFacetFactoryAbstract;
+import org.apache.isis.core.metamodel.facets.Annotations;
+import org.apache.isis.core.metamodel.facets.FacetFactoryAbstract;
 import org.apache.isis.core.metamodel.facets.describedas.DescribedAsFacet;
 import org.apache.isis.core.metamodel.spec.ObjectSpecification;
 
-public class DescribedAsAnnotationOnParameterFacetFactory extends AnnotationBasedFacetFactoryAbstract {
+public class DescribedAsAnnotationOnParameterFacetFactory extends FacetFactoryAbstract {
 
     public DescribedAsAnnotationOnParameterFacetFactory() {
         super(FeatureType.PARAMETERS_ONLY);
@@ -40,7 +41,7 @@ public class DescribedAsAnnotationOnParameterFacetFactory extends AnnotationBase
 
         final int paramNum = processParameterContext.getParamNum();
         final Class<?> parameterType = processParameterContext.getMethod().getParameterTypes()[paramNum];
-        final Annotation[] parameterAnnotations = getParameterAnnotations(processParameterContext.getMethod())[paramNum];
+        final Annotation[] parameterAnnotations = Annotations.getParameterAnnotations(processParameterContext.getMethod())[paramNum];
         for (final Annotation parameterAnnotation : parameterAnnotations) {
             if (parameterAnnotation instanceof DescribedAs) {
                 FacetUtil.addFacet(create((DescribedAs) parameterAnnotation, processParameterContext.getFacetHolder()));
@@ -63,7 +64,7 @@ public class DescribedAsAnnotationOnParameterFacetFactory extends AnnotationBase
     }
 
     private DescribedAsFacet getDescribedAsFacet(final Class<?> type) {
-        final ObjectSpecification paramTypeSpec = getSpecificationLookup().loadSpecification(type);
+        final ObjectSpecification paramTypeSpec = getSpecificationLoader().loadSpecification(type);
         return paramTypeSpec.getFacet(DescribedAsFacet.class);
     }
 

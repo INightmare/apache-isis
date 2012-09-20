@@ -29,24 +29,20 @@ import org.apache.isis.core.progmodel.facets.object.value.ValueSemanticsProvider
 
 public class DateValueSemanticsProvider extends DateValueSemanticsProviderAbstract<org.apache.isis.applib.value.Date> {
 
-    private static final boolean IMMUTABLE = false;
-    private static final boolean EQUAL_BY_CONTENT = false;
-    private static final org.apache.isis.applib.value.Date DEFAULT_VALUE = null; // new
-                                                                                 // org.apache.isis.applib.value.Date(2007,1,1);
+    // no default
+    private static final org.apache.isis.applib.value.Date DEFAULT_VALUE = null; 
 
-    // // no default
 
     /**
      * Required because implementation of {@link Parser} and
      * {@link EncoderDecoder}.
      */
-    @SuppressWarnings("NP_NULL_PARAM_DEREF_NONVIRTUAL")
     public DateValueSemanticsProvider() {
         this(null, null, null);
     }
 
     public DateValueSemanticsProvider(final FacetHolder holder, final IsisConfiguration configuration, final ValueSemanticsProviderContext context) {
-        super(holder, org.apache.isis.applib.value.Date.class, IMMUTABLE, EQUAL_BY_CONTENT, DEFAULT_VALUE, configuration, context);
+        super(holder, org.apache.isis.applib.value.Date.class, Immutability.NOT_IMMUTABLE, EqualByContent.NOT_HONOURED, DEFAULT_VALUE, configuration, context);
     }
 
     @Override

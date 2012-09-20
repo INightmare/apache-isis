@@ -22,6 +22,8 @@ package org.apache.isis.core.metamodel.specloader.specimpl;
 import java.util.List;
 
 import org.apache.isis.applib.Identifier;
+import org.apache.isis.applib.annotation.When;
+import org.apache.isis.applib.annotation.Where;
 import org.apache.isis.applib.filter.Filter;
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.commons.authentication.AuthenticationSessionProvider;
@@ -194,7 +196,8 @@ public abstract class ObjectMemberAbstract implements ObjectMember {
 
     @Override
     public boolean isAlwaysHidden() {
-        return containsFacet(HiddenFacet.class);
+        final HiddenFacet hiddenFacet = getFacet(HiddenFacet.class);
+        return hiddenFacet != null && hiddenFacet.when() == When.ALWAYS && hiddenFacet.where() != Where.NOWHERE;
     }
 
     /**
@@ -206,12 +209,12 @@ public abstract class ObjectMemberAbstract implements ObjectMember {
      * initiated {@link InteractionInvocationMethod#BY_USER by user}.
      */
     @Override
-    public Consent isVisible(final AuthenticationSession session, final ObjectAdapter target) {
-        return isVisibleResult(session, target).createConsent();
+    public Consent isVisible(final AuthenticationSession session, final ObjectAdapter target, Where where) {
+        return isVisibleResult(session, target, where).createConsent();
     }
 
-    private InteractionResult isVisibleResult(final AuthenticationSession session, final ObjectAdapter target) {
-        final VisibilityContext<?> ic = createVisibleInteractionContext(session, InteractionInvocationMethod.BY_USER, target);
+    private InteractionResult isVisibleResult(final AuthenticationSession session, final ObjectAdapter target, Where where) {
+        final VisibilityContext<?> ic = createVisibleInteractionContext(session, InteractionInvocationMethod.BY_USER, target, where);
         return InteractionUtils.isVisibleResult(this, ic);
     }
 
@@ -228,12 +231,12 @@ public abstract class ObjectMemberAbstract implements ObjectMember {
      * initiated {@link InteractionInvocationMethod#BY_USER by user}.
      */
     @Override
-    public Consent isUsable(final AuthenticationSession session, final ObjectAdapter target) {
-        return isUsableResult(session, target).createConsent();
+    public Consent isUsable(final AuthenticationSession session, final ObjectAdapter target, Where where) {
+        return isUsableResult(session, target, where).createConsent();
     }
 
-    private InteractionResult isUsableResult(final AuthenticationSession session, final ObjectAdapter target) {
-        final UsabilityContext<?> ic = createUsableInteractionContext(session, InteractionInvocationMethod.BY_USER, target);
+    private InteractionResult isUsableResult(final AuthenticationSession session, final ObjectAdapter target, Where where) {
+        final UsabilityContext<?> ic = createUsableInteractionContext(session, InteractionInvocationMethod.BY_USER, target, where);
         return InteractionUtils.isUsableResult(this, ic);
     }
 

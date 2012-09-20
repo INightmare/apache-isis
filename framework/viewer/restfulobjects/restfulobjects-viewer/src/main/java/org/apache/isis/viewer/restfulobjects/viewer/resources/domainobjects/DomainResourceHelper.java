@@ -1,3 +1,4 @@
+
 /**
  *  Licensed to the Apache Software Foundation (ASF) under one or more
  *  contributor license agreements.  See the NOTICE file distributed with
@@ -34,6 +35,8 @@ import com.google.common.io.ByteStreams;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 
+import org.apache.isis.applib.annotation.ActionSemantics;
+import org.apache.isis.applib.annotation.Where;
 import org.apache.isis.core.commons.authentication.AuthenticationSession;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
 import org.apache.isis.core.metamodel.adapter.version.Version;
@@ -52,8 +55,8 @@ import org.apache.isis.viewer.restfulobjects.applib.RepresentationType;
 import org.apache.isis.viewer.restfulobjects.applib.RestfulResponse.HttpStatusCode;
 import org.apache.isis.viewer.restfulobjects.applib.util.JsonMapper;
 import org.apache.isis.viewer.restfulobjects.applib.util.UrlEncodingUtils;
-import org.apache.isis.viewer.restfulobjects.viewer.RestfulObjectsApplicationException;
 import org.apache.isis.viewer.restfulobjects.viewer.ResourceContext;
+import org.apache.isis.viewer.restfulobjects.viewer.RestfulObjectsApplicationException;
 import org.apache.isis.viewer.restfulobjects.viewer.representations.RendererFactory;
 import org.apache.isis.viewer.restfulobjects.viewer.representations.RendererFactoryRegistry;
 import org.apache.isis.viewer.restfulobjects.viewer.resources.ResourceAbstract;
@@ -98,8 +101,19 @@ public final class DomainResourceHelper {
             final ObjectSpecification propertySpec = property.getSpecification();
             final String id = property.getId();
             final JsonRepresentation propertyRepr = propertiesList.getRepresentation("[id=%s]", id);
+            if (propertyRepr == null) {
+                if (property.isMandatory()) {
+                    throw new IllegalArgumentException(String.format("Mandatory field %s missing", property.getName()));
+                }
+                continue;
+            }
             final JsonRepresentation valueRepr = propertyRepr.getRepresentation("value");
-
+            final Consent usable = property.isUsable(resourceContext.getAuthenticationSession() , objectAdapter, resourceContext.getWhere());
+            if (usable.isVetoed()) {
+                propertyRepr.mapPut("invalidReason", usable.getReason());
+                allOk = false;
+                continue;
+            }
             final ObjectAdapter valueAdapter = objectAdapterFor(resourceContext, propertySpec, valueRepr);
             final Consent consent = property.isAssociationValid(objectAdapter, valueAdapter);
             if (consent.isAllowed()) {
@@ -158,9 +172,9 @@ public final class DomainResourceHelper {
         public abstract void apply(AbstractObjectMemberReprRenderer<?, ?> renderer);
     }
 
-    Response propertyDetails(final ObjectAdapter objectAdapter, final String propertyId, final MemberMode memberMode, final Caching caching) {
+    Response propertyDetails(final ObjectAdapter objectAdapter, final String propertyId, final MemberMode memberMode, final Caching caching, Where where) {
 
-        final OneToOneAssociation property = getPropertyThatIsVisibleAndUsable(propertyId, Intent.ACCESS);
+        final OneToOneAssociation property = getPropertyThatIsVisibleAndUsable(propertyId, Intent.ACCESS, where);
 
         final RendererFactory factory = getRendererFactoryRegistry().find(RepresentationType.OBJECT_PROPERTY);
         final ObjectPropertyReprRenderer renderer = (ObjectPropertyReprRenderer) factory.newRenderer(resourceContext, null, JsonRepresentation.newMap());
@@ -176,9 +190,9 @@ public final class DomainResourceHelper {
     // collectionDetails
     // //////////////////////////////////////////////////////////////
 
-    Response collectionDetails(final ObjectAdapter objectAdapter, final String collectionId, final MemberMode memberMode, final Caching caching) {
+    Response collectionDetails(final ObjectAdapter objectAdapter, final String collectionId, final MemberMode memberMode, final Caching caching, Where where) {
 
-        final OneToManyAssociation collection = getCollectionThatIsVisibleAndUsable(collectionId, Intent.ACCESS);
+        final OneToManyAssociation collection = getCollectionThatIsVisibleAndUsable(collectionId, Intent.ACCESS, where);
 
         final RendererFactory factory = RendererFactoryRegistry.instance.find(RepresentationType.OBJECT_COLLECTION);
         final ObjectCollectionReprRenderer renderer = (ObjectCollectionReprRenderer) factory.newRenderer(resourceContext, null, JsonRepresentation.newMap());
@@ -194,8 +208,8 @@ public final class DomainResourceHelper {
     // action Prompt
     // //////////////////////////////////////////////////////////////
 
-    Response actionPrompt(final String actionId) {
-        final ObjectAction action = getObjectActionThatIsVisibleAndUsable(actionId, Intent.ACCESS);
+    Response actionPrompt(final String actionId, Where where) {
+        final ObjectAction action = getObjectActionThatIsVisibleAndUsable(actionId, Intent.ACCESS, where);
 
         final RendererFactory factory = getRendererFactoryRegistry().find(RepresentationType.OBJECT_ACTION);
         final ObjectActionReprRenderer renderer = (ObjectActionReprRenderer) factory.newRenderer(resourceContext, null, JsonRepresentation.newMap());
@@ -217,23 +231,23 @@ public final class DomainResourceHelper {
         }
     }
 
-    Response invokeActionQueryOnly(final String actionId, final JsonRepresentation arguments) {
-        final ObjectAction action = getObjectActionThatIsVisibleAndUsable(actionId, Intent.ACCESS);
+    Response invokeActionQueryOnly(final String actionId, final JsonRepresentation arguments, Where where) {
+        final ObjectAction action = getObjectActionThatIsVisibleAndUsable(actionId, Intent.ACCESS, where);
 
-        final ActionSemantics actionSemantics = ActionSemantics.determine(resourceContext, action);
-        if (!actionSemantics.isQueryOnly()) {
+        final ActionSemantics.Of actionSemantics = action.getSemantics();
+        if (actionSemantics != ActionSemantics.Of.SAFE) {
             throw RestfulObjectsApplicationException.create(HttpStatusCode.METHOD_NOT_ALLOWED, "Method not allowed; action '%s' is not query only", action.getId());
         }
 
         return invokeActionUsingAdapters(action, arguments);
     }
 
-    Response invokeActionIdempotent(final String actionId, final InputStream body) {
+    Response invokeActionIdempotent(final String actionId, final InputStream body, Where where) {
 
-        final ObjectAction action = getObjectActionThatIsVisibleAndUsable(actionId, Intent.MUTATE);
+        final ObjectAction action = getObjectActionThatIsVisibleAndUsable(actionId, Intent.MUTATE, where);
 
-        final ActionSemantics actionSemantics = ActionSemantics.determine(resourceContext, action);
-        if (!actionSemantics.isIdempotent()) {
+        final ActionSemantics.Of actionSemantics = action.getSemantics();
+        if (!actionSemantics.isIdempotentInNature()) {
             throw RestfulObjectsApplicationException.create(HttpStatusCode.METHOD_NOT_ALLOWED, "Method not allowed; action '%s' is not idempotent", action.getId());
         }
         final String bodyAsString = asStringUtf8(body);
@@ -242,8 +256,8 @@ public final class DomainResourceHelper {
         return invokeActionUsingAdapters(action, arguments);
     }
 
-    Response invokeAction(final String actionId, final InputStream body) {
-        final ObjectAction action = getObjectActionThatIsVisibleAndUsable(actionId, Intent.MUTATE);
+    Response invokeAction(final String actionId, final InputStream body, Where where) {
+        final ObjectAction action = getObjectActionThatIsVisibleAndUsable(actionId, Intent.MUTATE, where);
 
         final String bodyAsString = asStringUtf8(body);
         final JsonRepresentation arguments = readAsMap(bodyAsString);
@@ -299,7 +313,7 @@ public final class DomainResourceHelper {
     }
 
     /**
-     * 
+     *
      * @param resourceContext
      * @param objectSpec
      *            - the {@link ObjectSpecification} to interpret the object as.
@@ -340,7 +354,7 @@ public final class DomainResourceHelper {
      * {@link #objectAdapterFor(ResourceContext, ObjectSpecification, Object)},
      * however the object being interpreted is a String holding URL encoded JSON
      * (rather than having already been parsed into a Map representation).
-     * 
+     *
      * @throws IOException
      * @throws JsonMappingException
      * @throws JsonParseException
@@ -368,44 +382,44 @@ public final class DomainResourceHelper {
     // get{MemberType}ThatIsVisibleAndUsable
     // ///////////////////////////////////////////////////////////////////
 
-    protected OneToOneAssociation getPropertyThatIsVisibleAndUsable(final String propertyId, final Intent intent) {
+    protected OneToOneAssociation getPropertyThatIsVisibleAndUsable(final String propertyId, final Intent intent, Where where) {
 
         final ObjectAssociation association = objectAdapter.getSpecification().getAssociation(propertyId);
         if (association == null || !association.isOneToOneAssociation()) {
             throwNotFoundException(propertyId, MemberType.PROPERTY);
         }
         final OneToOneAssociation property = (OneToOneAssociation) association;
-        return memberThatIsVisibleAndUsable(property, MemberType.PROPERTY, intent);
+        return memberThatIsVisibleAndUsable(property, MemberType.PROPERTY, intent, where);
     }
 
-    protected OneToManyAssociation getCollectionThatIsVisibleAndUsable(final String collectionId, final Intent intent) {
+    protected OneToManyAssociation getCollectionThatIsVisibleAndUsable(final String collectionId, final Intent intent, Where where) {
 
         final ObjectAssociation association = objectAdapter.getSpecification().getAssociation(collectionId);
         if (association == null || !association.isOneToManyAssociation()) {
             throwNotFoundException(collectionId, MemberType.COLLECTION);
         }
         final OneToManyAssociation collection = (OneToManyAssociation) association;
-        return memberThatIsVisibleAndUsable(collection, MemberType.COLLECTION, intent);
+        return memberThatIsVisibleAndUsable(collection, MemberType.COLLECTION, intent, where);
     }
 
-    protected ObjectAction getObjectActionThatIsVisibleAndUsable(final String actionId, final Intent intent) {
+    protected ObjectAction getObjectActionThatIsVisibleAndUsable(final String actionId, final Intent intent, Where where) {
 
         final ObjectAction action = objectAdapter.getSpecification().getObjectAction(actionId);
         if (action == null) {
             throwNotFoundException(actionId, MemberType.ACTION);
         }
 
-        return memberThatIsVisibleAndUsable(action, MemberType.ACTION, intent);
+        return memberThatIsVisibleAndUsable(action, MemberType.ACTION, intent, where);
     }
 
-    protected <T extends ObjectMember> T memberThatIsVisibleAndUsable(final T objectMember, final MemberType memberType, final Intent intent) {
+    protected <T extends ObjectMember> T memberThatIsVisibleAndUsable(final T objectMember, final MemberType memberType, final Intent intent, Where where) {
         final String memberId = objectMember.getId();
         final AuthenticationSession authenticationSession = resourceContext.getAuthenticationSession();
-        if (objectMember.isVisible(authenticationSession, objectAdapter).isVetoed()) {
+        if (objectMember.isVisible(authenticationSession, objectAdapter, where).isVetoed()) {
             throwNotFoundException(memberId, memberType);
         }
         if (intent.isMutate()) {
-            final Consent usable = objectMember.isUsable(authenticationSession, objectAdapter);
+            final Consent usable = objectMember.isUsable(authenticationSession, objectAdapter, where);
             if (usable.isVetoed()) {
                 final String memberTypeStr = memberType.name().toLowerCase();
                 throw RestfulObjectsApplicationException.create(HttpStatusCode.NOT_ACCEPTABLE, "%s is not usable: '%s' (%s)", memberTypeStr, memberId, usable.getReason());
@@ -424,7 +438,7 @@ public final class DomainResourceHelper {
     // ///////////////////////////////////////////////////////////////////
 
     /**
-     * 
+     *
      * @param objectSpec
      * @param bodyAsString
      *            - as per {@link #asStringUtf8(InputStream)}

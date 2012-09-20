@@ -37,7 +37,6 @@ import org.apache.isis.core.commons.debug.DebugBuilder;
 import org.apache.isis.core.commons.debug.DebuggableWithTitle;
 import org.apache.isis.core.commons.exceptions.IsisException;
 import org.apache.isis.core.commons.exceptions.UnknownTypeException;
-import org.apache.isis.core.commons.lang.JavaClassUtils;
 import org.apache.isis.core.commons.lang.ListUtils;
 import org.apache.isis.core.commons.lang.NameUtils;
 import org.apache.isis.core.commons.lang.ToString;
@@ -57,6 +56,7 @@ import org.apache.isis.core.metamodel.facets.object.icon.IconFacet;
 import org.apache.isis.core.metamodel.facets.object.plural.PluralFacet;
 import org.apache.isis.core.metamodel.facets.object.plural.PluralFacetInferred;
 import org.apache.isis.core.metamodel.facets.object.title.TitleFacet;
+import org.apache.isis.core.metamodel.facets.object.value.ValueFacet;
 import org.apache.isis.core.metamodel.layout.MemberLayoutArranger;
 import org.apache.isis.core.metamodel.layout.OrderSet;
 import org.apache.isis.core.metamodel.runtimecontext.ServicesInjector;
@@ -77,6 +77,7 @@ import org.apache.isis.core.metamodel.specloader.specimpl.FacetedMethodsBuilderC
 import org.apache.isis.core.metamodel.specloader.specimpl.IntrospectionContext;
 import org.apache.isis.core.metamodel.specloader.specimpl.ObjectActionImpl;
 import org.apache.isis.core.metamodel.specloader.specimpl.ObjectSpecificationAbstract;
+import org.apache.isis.core.metamodel.specloader.specimpl.ObjectSpecificationAbstract.IntrospectionState;
 import org.apache.isis.core.metamodel.specloader.specimpl.OneToManyAssociationImpl;
 import org.apache.isis.core.metamodel.specloader.specimpl.OneToOneAssociationImpl;
 
@@ -123,28 +124,31 @@ public class ObjectSpecificationDefault extends ObjectSpecificationAbstract impl
 
     @Override
     public void introspectTypeHierarchyAndMembers() {
-        if (facetedMethodsBuilder == null) {
-            throw new MetaModelException("Introspection already taken place, cannot introspect again");
-        }
 
         // class
-        facetedMethodsBuilder.introspectClass();
+        if(isNotIntrospected()) {
+            facetedMethodsBuilder.introspectClass();
+        }
+        
+        // name
+        if(isNotIntrospected()) {
+            addNamedFacetAndPluralFacetIfRequired();
+        }
 
-        // names
-        addNamedFacetAndPluralFacetIfRequired();
-
-        // superclass
-        final Class<?> superclass = getCorrespondingClass().getSuperclass();
-        setSuperclass(superclass);
-
-        // go no further if required
-        final boolean skipFurtherIntrospection = JavaClassUtils.isJavaClass(getCorrespondingClass()) || isAppLibValue(getCorrespondingClass());
-        if (skipFurtherIntrospection) {
+        // go no further if a value
+        if(this.containsFacet(ValueFacet.class)) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("skipping introspection of interfaces, properties, actions and interfaces for " + getFullIdentifier() + " (java.xxx or applib value class)");
+                LOG.debug("skipping full introspection for value type " + getFullIdentifier());
             }
             return;
         }
+
+        // superclass
+        if(isNotIntrospected()) {
+            final Class<?> superclass = getCorrespondingClass().getSuperclass();
+            updateSuperclass(superclass);
+        }
+
 
         // walk superinterfaces
 
@@ -165,27 +169,39 @@ public class ObjectSpecificationDefault extends ObjectSpecificationAbstract impl
                 interfaceSpecList.add(interfaceSpec);
             }
         }
-        addAsSubclassTo(interfaceSpecList);
-        addInterfaces(interfaceSpecList);
+
+        if(isNotIntrospected()) {
+            updateAsSubclassTo(interfaceSpecList);
+        }
+        if(isNotIntrospected()) {
+            updateInterfaces(interfaceSpecList);
+        }
 
         // associations and actions
         final List<FacetedMethod> associationFacetedMethods = facetedMethodsBuilder.getAssociationFacetedMethods();
-        // actions
         final List<FacetedMethod> actionFacetedMethods = facetedMethodsBuilder.getActionFacetedMethods();
 
-        // ordering
-        final OrderSet associationOrderSet = getMemberLayoutArranger().createAssociationOrderSetFor(this, associationFacetedMethods);
-        addAssociations(asAssociations(associationOrderSet));
+        if(isNotIntrospected()) {
+            final OrderSet associationOrderSet = getMemberLayoutArranger().createAssociationOrderSetFor(this, associationFacetedMethods);
+            updateAssociations(asAssociations(associationOrderSet));
+        }
 
-        final OrderSet actionOrderSet = getMemberLayoutArranger().createActionOrderSetFor(this, actionFacetedMethods);
-        addObjectActions(asObjectActions(actionOrderSet));
+        if(isNotIntrospected()) {
+            final OrderSet actionOrderSet = getMemberLayoutArranger().createActionOrderSetFor(this, actionFacetedMethods);
+            updateObjectActions(asObjectActions(actionOrderSet));
+        }
 
-        facetedMethodsBuilder.introspectClassPostProcessing();
+        if(isNotIntrospected()) {
+            facetedMethodsBuilder.introspectClassPostProcessing();    
+        }
+        
+        if(isNotIntrospected()) {
+            updateFromFacetValues();    
+        }
+    }
 
-        updateFromFacetValues();
-
-        facetedMethodsBuilder = null;
-        setIntrospected(true);
+    private boolean isNotIntrospected() {
+        return !(getIntrospectionState() == IntrospectionState.INTROSPECTED);
     }
 
     private void addNamedFacetAndPluralFacetIfRequired() {
@@ -200,14 +216,6 @@ public class ObjectSpecificationDefault extends ObjectSpecificationAbstract impl
             pluralFacet = new PluralFacetInferred(NameUtils.pluralName(namedFacet.value()), this);
             addFacet(pluralFacet);
         }
-    }
-
-    /**
-     * TODO: review this, should be more general and check for value facet,
-     * surely?
-     */
-    private boolean isAppLibValue(final Class<?> type) {
-        return type.getName().startsWith("org.apache.isis.applib.value.");
     }
 
     private List<ObjectAssociation> asAssociations(final OrderSet orderSet) {
@@ -270,13 +278,8 @@ public class ObjectSpecificationDefault extends ObjectSpecificationAbstract impl
         return new ObjectActionSet("", set.getGroupFullName(), asObjectActions(set));
     }
 
-    /**
-     * Added to try to track down a race condition.
-     */
-    @Override
-    public boolean isIntrospected() {
-        return facetedMethodsBuilder == null;
-    }
+    
+
 
     // //////////////////////////////////////////////////////////////////////
     // Whether a service or not
@@ -339,13 +342,13 @@ public class ObjectSpecificationDefault extends ObjectSpecificationAbstract impl
 
     @Override
     public ObjectAction getObjectAction(final ActionType type, final String id, final List<ObjectSpecification> parameters) {
-        final List<ObjectAction> availableActions = ListUtils.combine(getObjectActions(Contributed.EXCLUDED), getContributedActions(type));
+        final List<ObjectAction> availableActions = ListUtils.combine(getObjectActions(Contributed.EXCLUDED), getContributedActions(type, Filters.<ObjectAction>any()));
         return getAction(availableActions, type, id, parameters);
     }
 
     @Override
     public ObjectAction getObjectAction(final ActionType type, final String id) {
-        final List<ObjectAction> availableActions = ListUtils.combine(getObjectActions(type, Contributed.INCLUDED), getContributedActions(type));
+        final List<ObjectAction> availableActions = ListUtils.combine(getObjectActions(type, Contributed.INCLUDED), getContributedActions(type, Filters.<ObjectAction>any()));
         return getAction(availableActions, type, id);
     }
 
