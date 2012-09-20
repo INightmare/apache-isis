@@ -301,6 +301,11 @@ public interface ObjectSpecification extends Specification, ObjectActionContaine
      */
     boolean isHidden();
 
+    /**
+     * Whether has the {@link LazyPropertyFacet}
+     */
+    boolean isLazy();
+    
     // //////////////////////////////////////////////////////////////
     // Creation
     // //////////////////////////////////////////////////////////////

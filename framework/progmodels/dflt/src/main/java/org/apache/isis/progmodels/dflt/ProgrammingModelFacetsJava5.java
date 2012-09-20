@@ -134,6 +134,7 @@ import org.apache.isis.core.progmodel.facets.properties.content.ContentDescripti
 import org.apache.isis.core.progmodel.facets.properties.defaults.fromtype.PropertyDefaultDerivedFromTypeFacetFactory;
 import org.apache.isis.core.progmodel.facets.properties.defaults.method.PropertyDefaultFacetFactory;
 import org.apache.isis.core.progmodel.facets.properties.disabled.fromimmutable.DisabledFacetForPropertyDerivedFromImmutableTypeFacetFactory;
+import org.apache.isis.core.progmodel.facets.properties.lazy.LazyPropertyFacetFactory;
 import org.apache.isis.core.progmodel.facets.properties.mandatory.annotation.OptionalAnnotationForPropertyFacetFactory;
 import org.apache.isis.core.progmodel.facets.properties.mandatory.dflt.MandatoryDefaultForPropertiesFacetFactory;
 import org.apache.isis.core.progmodel.facets.properties.mandatory.staticmethod.PropertyOptionalFacetFactory;
@@ -227,6 +228,8 @@ public class ProgrammingModelFacetsJava5 extends ProgrammingModelAbstract {
         addFactory(PropertyChoicesFacetFactory.class);
         addFactory(PropertyDefaultFacetFactory.class);
         addFactory(PropertyOptionalFacetFactory.class);
+        
+        addFactory(LazyPropertyFacetFactory.class);
 
         // collections
         addFactory(CollectionAccessorFacetFactory.class);

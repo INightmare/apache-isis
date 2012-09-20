@@ -25,9 +25,9 @@ import org.apache.isis.core.metamodel.facets.AnnotationBasedFacetFactoryAbstract
  *
  * Adds facet to properties of type byte[] and properties annotated with @Lazy
  */
-public class LazyLoadedPropertyFacetFactory extends AnnotationBasedFacetFactoryAbstract {
+public class LazyPropertyFacetFactory extends AnnotationBasedFacetFactoryAbstract {
     
-    public LazyLoadedPropertyFacetFactory() {
+    public LazyPropertyFacetFactory() {
         super(FeatureType.PROPERTIES_ONLY);
     }
     
@@ -39,7 +39,7 @@ public class LazyLoadedPropertyFacetFactory extends AnnotationBasedFacetFactoryA
         
         if ( (lazy == null && cls == byte[].class)
                 || (lazy != null && lazy.value()) ) {
-            FacetUtil.addFacet(new LazyLoadedPropertyFacetDefault(processMethodContext.getFacetHolder()));
+            FacetUtil.addFacet(new LazyPropertyFacetDefault(processMethodContext.getFacetHolder()));
         }
         
     }

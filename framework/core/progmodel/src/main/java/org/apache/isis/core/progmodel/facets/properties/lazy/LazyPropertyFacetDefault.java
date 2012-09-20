@@ -15,6 +15,7 @@
  */
 package org.apache.isis.core.progmodel.facets.properties.lazy;
 
+import org.apache.isis.core.metamodel.facets.properties.lazy.LazyPropertyFacet;
 import org.apache.isis.core.metamodel.facetapi.FacetAbstract;
 import org.apache.isis.core.metamodel.facetapi.FacetHolder;
 
@@ -22,10 +23,10 @@ import org.apache.isis.core.metamodel.facetapi.FacetHolder;
  *
  * @see LaxyLoadedPropertyFacet
  */
-public class LazyLoadedPropertyFacetDefault extends FacetAbstract implements LazyLoadedPropertyFacet {
+public class LazyPropertyFacetDefault extends FacetAbstract implements LazyPropertyFacet {
     
-    public LazyLoadedPropertyFacetDefault(final FacetHolder facetHolder) {
-        super(LazyLoadedPropertyFacet.class, facetHolder, false);
+    public LazyPropertyFacetDefault(final FacetHolder facetHolder) {
+        super(LazyPropertyFacet.class, facetHolder, false);
     }
     
 }

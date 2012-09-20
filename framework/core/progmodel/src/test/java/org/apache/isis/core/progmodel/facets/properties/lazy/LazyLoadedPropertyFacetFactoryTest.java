@@ -15,6 +15,7 @@
  */
 package org.apache.isis.core.progmodel.facets.properties.lazy;
 
+import org.apache.isis.core.metamodel.facets.properties.lazy.LazyPropertyFacet;
 import java.lang.reflect.Method;
 import org.apache.isis.applib.annotation.Lazy;
 import org.apache.isis.applib.filter.Filter;
@@ -30,7 +31,7 @@ import org.apache.isis.core.progmodel.facets.AbstractFacetFactoryTest;
  */
 public class LazyLoadedPropertyFacetFactoryTest extends AbstractFacetFactoryTest {
     
-    private FacetFactory facetFactory = new LazyLoadedPropertyFacetFactory();
+    private FacetFactory facetFactory = new LazyPropertyFacetFactory();
     
     public void testLazyLoadedPropertyFacetIsAdded() {
         assertNotNull("should add facet for byte[] property", checkFacetForMethod("getPhoto"));
@@ -46,7 +47,7 @@ public class LazyLoadedPropertyFacetFactoryTest extends AbstractFacetFactoryTest
     private Facet checkFacetForMethod(String methodName) {
         final Method method = findMethod(LazyLoadedPropertyFacetFactoryTest.Customer.class, methodName);
         facetFactory.process(new ProcessMethodContext(LazyLoadedPropertyFacetFactoryTest.Customer.class, method, methodRemover, facetedMethod));
-        return facetedMethod.getFacet(LazyLoadedPropertyFacet.class);
+        return facetedMethod.getFacet(LazyPropertyFacet.class);
     }
     
     class Customer {

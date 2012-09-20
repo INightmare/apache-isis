@@ -63,6 +63,7 @@ import org.apache.isis.core.metamodel.facets.object.parseable.ParseableFacet;
 import org.apache.isis.core.metamodel.facets.object.plural.PluralFacet;
 import org.apache.isis.core.metamodel.facets.object.title.TitleFacet;
 import org.apache.isis.core.metamodel.facets.object.value.ValueFacet;
+import org.apache.isis.core.metamodel.facets.properties.lazy.LazyPropertyFacet;
 import org.apache.isis.core.metamodel.facets.typeof.TypeOfFacet;
 import org.apache.isis.core.metamodel.interactions.InteractionContext;
 import org.apache.isis.core.metamodel.interactions.InteractionUtils;
@@ -921,6 +922,11 @@ public abstract class ObjectSpecificationAbstract extends FacetHolderImpl implem
     @Override
     public boolean isValueOrIsParented() {
         return isValue() || isParented();
+    }
+    
+    @Override
+    public boolean isLazy() {
+        return containsFacet(LazyPropertyFacet.class);
     }
 
     // //////////////////////////////////////////////////////////////////////

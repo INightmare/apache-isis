@@ -424,6 +424,12 @@ public class ObjectSpecificationStub extends FacetHolderImpl implements ObjectSp
     public boolean isImmutable() {
         return containsFacet(ImmutableFacet.class);
     }
+    
+    @Override
+    public boolean isLazy() {
+        return false;
+    }
+
 
     @Override
     public ObjectValidityContext createValidityInteractionContext(final AuthenticationSession session, final InteractionInvocationMethod invocationMethod, final ObjectAdapter targetObjectAdapter) {

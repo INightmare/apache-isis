@@ -20,7 +20,7 @@ import org.apache.isis.applib.content.ContentDescription;
 import org.apache.isis.applib.content.DefaultContentDescription;
 import org.apache.isis.core.metamodel.facets.FacetFactory;
 import org.apache.isis.core.progmodel.facets.AbstractFacetFactoryTest;
-import org.apache.isis.core.progmodel.facets.properties.lazy.LazyLoadedPropertyFacet;
+import org.apache.isis.core.metamodel.facets.properties.lazy.LazyPropertyFacet;
 import org.apache.isis.core.progmodel.facets.properties.lazy.LazyLoadedPropertyFacetFactoryTest;
 
 /**

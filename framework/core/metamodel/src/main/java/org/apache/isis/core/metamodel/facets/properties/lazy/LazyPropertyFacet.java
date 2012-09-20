@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.isis.core.progmodel.facets.properties.lazy;
+package org.apache.isis.core.metamodel.facets.properties.lazy;
 
 import org.apache.isis.core.metamodel.facetapi.Facet;
 
@@ -31,6 +31,6 @@ import org.apache.isis.core.metamodel.facetapi.Facet;
  * with containing object.</li>
  * </ul>
  */
-public interface LazyLoadedPropertyFacet extends Facet {
+public interface LazyPropertyFacet extends Facet {
     
 }
