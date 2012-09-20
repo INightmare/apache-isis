@@ -17,11 +17,9 @@ package org.apache.isis.core.progmodel.facets.value.bytearray;
 
 import org.apache.isis.applib.profiles.Localization;
 import org.apache.isis.core.commons.config.IsisConfiguration;
-import org.apache.isis.core.metamodel.facetapi.Facet;
 import org.apache.isis.core.metamodel.facetapi.FacetHolder;
 import org.apache.isis.core.progmodel.facets.object.value.ValueSemanticsProviderAndFacetAbstract;
 import org.apache.isis.core.progmodel.facets.object.value.ValueSemanticsProviderContext;
-import org.apache.isis.core.progmodel.facets.value.bytes.ByteValueFacet;
 
 /**
  *
@@ -30,7 +28,7 @@ import org.apache.isis.core.progmodel.facets.value.bytes.ByteValueFacet;
 public class ByteArrayValueSemanticsProvider extends ValueSemanticsProviderAndFacetAbstract<byte[]> implements ByteArrayValueFacet {
 
     public ByteArrayValueSemanticsProvider(FacetHolder holder, IsisConfiguration configuration, ValueSemanticsProviderContext context) {
-        super(ByteArrayValueFacet.class, holder, byte[].class, 1, false, true, null, configuration, context);
+        super(ByteArrayValueFacet.class, holder, byte[].class, 1, Immutability.NOT_IMMUTABLE, EqualByContent.HONOURED, null, configuration, context);
     }
 
     @Override

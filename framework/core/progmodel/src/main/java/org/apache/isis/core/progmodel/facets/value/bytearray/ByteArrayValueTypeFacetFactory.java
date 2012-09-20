@@ -15,10 +15,8 @@
  */
 package org.apache.isis.core.progmodel.facets.value.bytearray;
 
-import org.apache.isis.core.metamodel.facetapi.Facet;
 import org.apache.isis.core.metamodel.facetapi.FacetHolder;
 import org.apache.isis.core.progmodel.facets.object.value.ValueUsingValueSemanticsProviderFacetFactory;
-import org.apache.isis.core.progmodel.facets.value.bytes.BytePrimitiveValueSemanticsProvider;
 
 /**
  *

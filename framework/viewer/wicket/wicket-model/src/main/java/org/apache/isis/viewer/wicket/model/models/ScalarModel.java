@@ -468,6 +468,6 @@ public class ScalarModel extends EntityModel implements FacetProvider {
     }
 
     public ObjectAdapter getParent() {
-        return parentObjectAdapterMemento.getObjectAdapter();
+        return parentObjectAdapterMemento.getObjectAdapter(ConcurrencyChecking.NO_CHECK);
     }
 }

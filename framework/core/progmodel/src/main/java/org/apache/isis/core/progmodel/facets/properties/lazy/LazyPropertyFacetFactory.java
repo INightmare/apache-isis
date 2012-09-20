@@ -19,13 +19,15 @@ import java.lang.reflect.Method;
 import org.apache.isis.applib.annotation.Lazy;
 import org.apache.isis.core.metamodel.facetapi.FacetUtil;
 import org.apache.isis.core.metamodel.facetapi.FeatureType;
-import org.apache.isis.core.metamodel.facets.AnnotationBasedFacetFactoryAbstract;
+import org.apache.isis.core.metamodel.facets.Annotations;
+import org.apache.isis.core.metamodel.facets.FacetFactory.ProcessMethodContext;
+import org.apache.isis.core.metamodel.facets.FacetFactoryAbstract;
 
 /**
  *
  * Adds facet to properties of type byte[] and properties annotated with @Lazy
  */
-public class LazyPropertyFacetFactory extends AnnotationBasedFacetFactoryAbstract {
+public class LazyPropertyFacetFactory extends FacetFactoryAbstract {
     
     public LazyPropertyFacetFactory() {
         super(FeatureType.PROPERTIES_ONLY);
@@ -35,7 +37,7 @@ public class LazyPropertyFacetFactory extends AnnotationBasedFacetFactoryAbstrac
     public void process(final ProcessMethodContext processMethodContext) {
         final Method method = processMethodContext.getMethod();
         final Class<?> cls = method.getReturnType();
-        Lazy lazy = getAnnotation(method, Lazy.class);
+        Lazy lazy = Annotations.getAnnotation(method, Lazy.class);
         
         if ( (lazy == null && cls == byte[].class)
                 || (lazy != null && lazy.value()) ) {

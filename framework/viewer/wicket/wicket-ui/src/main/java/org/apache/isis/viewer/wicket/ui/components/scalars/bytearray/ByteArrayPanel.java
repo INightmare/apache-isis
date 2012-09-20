@@ -15,18 +15,19 @@
  */
 package org.apache.isis.viewer.wicket.ui.components.scalars.bytearray;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 import org.apache.isis.applib.content.ContentDescription;
 import org.apache.isis.applib.content.DefaultContentDescription;
 import org.apache.isis.core.metamodel.adapter.ObjectAdapter;
-import org.apache.isis.core.metamodel.facetapi.FacetHolder;
 import org.apache.isis.core.progmodel.facets.properties.content.ContentDescriptionFacetViaMethod;
 import org.apache.isis.viewer.wicket.model.models.ScalarModel;
 import org.apache.isis.viewer.wicket.ui.components.scalars.ScalarPanelAbstract;
 import org.apache.log4j.Logger;
 import org.apache.wicket.Component;
-import org.apache.wicket.markup.html.DynamicWebResource;
-import org.apache.wicket.markup.html.DynamicWebResource.ResourceState;
+import org.apache.wicket.markup.head.IHeaderResponse;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.FormComponentLabel;
 import org.apache.wicket.markup.html.form.upload.FileUpload;
@@ -34,7 +35,12 @@ import org.apache.wicket.markup.html.form.upload.FileUploadField;
 import org.apache.wicket.markup.html.link.ResourceLink;
 import org.apache.wicket.markup.html.panel.ComponentFeedbackPanel;
 import org.apache.wicket.model.Model;
+import org.apache.wicket.model.util.ListModel;
+import org.apache.wicket.request.resource.ResourceStreamResource;
 import org.apache.wicket.util.io.IOUtils;
+import org.apache.wicket.util.resource.AbstractResourceStream;
+import org.apache.wicket.util.resource.ResourceStreamNotFoundException;
+import org.apache.wicket.util.time.Duration;
 
 /**
  *
@@ -62,8 +68,8 @@ public class ByteArrayPanel extends ScalarPanelAbstract {
         
         final FormComponentLabel scalarIfRegular = new FormComponentLabel(ID_SCALAR_IF_REGULAR, fileUploadField);
         scalarIfRegular.add(fileUploadField);
-        
-        final Label scalarName = new Label(ID_SCALAR_NAME, getFormat().getLabelCaption(fileUploadField));
+
+        final Label scalarName = new Label(ID_SCALAR_NAME, getRendering().getLabelCaption(fileUploadField));
         scalarIfRegular.add(scalarName);
         scalarIfRegular.add(createResourceLink(ID_SCALAR_IF_DISABLED));
         
@@ -81,16 +87,17 @@ public class ByteArrayPanel extends ScalarPanelAbstract {
     }
 
     protected FileUploadField createFileUploadField(String componentId) {
-        final FileUploadField fileUploadField = new FileUploadField(componentId, new Model<FileUpload>() {
+        
+        final FileUploadField fileUploadField = new FileUploadField(componentId, new ListModel<FileUpload>() {
 
             @Override
-            public void setObject(final FileUpload fileUpload) {
-                if (fileUpload == null) {
+            public void setObject(final List<FileUpload> fileUploads) {
+                if (fileUploads == null || fileUploads.isEmpty()) {
                     return;
                 }
                 
                 final ScalarModel model = getModel();
-                final byte[] content = readUploadedContent(fileUpload);
+                final byte[] content = readUploadedContent(fileUploads.get(0));
                 final ObjectAdapter adapter = getAdapterManager().adapterFor(content);
                 getModel().setObject(adapter);
             }
@@ -113,32 +120,24 @@ public class ByteArrayPanel extends ScalarPanelAbstract {
     private ResourceLink createResourceLink(String id) {
         final ContentDescription description = getContentDescription(getModel());
         final String filename = description.getName();
-        
-        final DynamicWebResource wsrc = new DynamicWebResource(filename) {
+      
+        final ResourceStreamResource resource = new ResourceStreamResource(new AbstractResourceStream() {
+
             @Override
-            protected ResourceState getResourceState() {
-                return new DynamicWebResource.ResourceState() {
-
-                    @Override
-                    public byte[] getData() {
-                        // Will throw an NPE if no content is available
-                        // should either check if content is available,
-                        // but that requires some additional effort to
-                        // get the availability from DB or just load the
-                        // whole thing all the time
-                        return (byte[]) getModel().getObject().getObject();
-                    }
-
-                    @Override
-                    public String getContentType() {
-                        return description.getMimeType();
-                    }
-                };
+            public InputStream getInputStream() throws ResourceStreamNotFoundException {
+                return new ByteArrayInputStream( (byte[]) getModel().getObject().getObject());
             }
-            
-        };
+
+            @Override
+            public void close() throws IOException {
+            }
+
+        });
         
-        final ResourceLink resourceLink = new ResourceLink(id, wsrc);
+        resource.setFileName(filename);
+        resource.setCacheDuration(Duration.NONE);
+        
+        final ResourceLink resourceLink = new ResourceLink(id, resource);
         return resourceLink;
     }
     
@@ -170,5 +169,9 @@ public class ByteArrayPanel extends ScalarPanelAbstract {
             // Need to call this on the parent, as the model is the byte array
             return contentDescriptionFacet.getContentDescription(model.getParent());
         }
+    }
+
+    @Override
+    public void renderHead(IHeaderResponse response) {
     }
 }

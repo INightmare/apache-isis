@@ -17,7 +17,6 @@ package org.apache.isis.core.progmodel.facets.properties.content;
 
 import java.lang.reflect.Method;
 import org.apache.isis.applib.content.ContentDescription;
-import org.apache.isis.applib.security.UserMemento;
 import org.apache.isis.core.commons.lang.NameUtils;
 import org.apache.isis.core.metamodel.facetapi.FacetHolder;
 import org.apache.isis.core.metamodel.facetapi.FacetUtil;
@@ -26,7 +25,6 @@ import org.apache.isis.core.metamodel.methodutils.MethodScope;
 import org.apache.isis.core.progmodel.facets.MethodFinderUtils;
 import org.apache.isis.core.progmodel.facets.MethodPrefixBasedFacetFactoryAbstract;
 import org.apache.isis.core.progmodel.facets.MethodPrefixConstants;
-import org.apache.isis.core.progmodel.facets.members.disable.forsession.DisableForSessionFacetViaMethod;
 
 /**
  *
@@ -44,8 +42,6 @@ public class ContentDescriptionFacetViaMethodFactory extends MethodPrefixBasedFa
         final Class cls = processMethodContext.getCls();
         final Method method = processMethodContext.getMethod();
         
-        System.out.println("Method: " + method.getName());
-        
         final String capitalizedName = NameUtils.javaBaseNameStripAccessorPrefixIfRequired(method.getName());
         
         System.out.println(capitalizedName);
@@ -55,8 +51,6 @@ public class ContentDescriptionFacetViaMethodFactory extends MethodPrefixBasedFa
         if (describeMethod == null) {
             return;
         }
-        
-        System.out.println("Continuing...");
         
         processMethodContext.removeMethod(describeMethod);
 

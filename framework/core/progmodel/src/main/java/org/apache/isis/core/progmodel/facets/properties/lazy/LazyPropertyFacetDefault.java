@@ -26,7 +26,7 @@ import org.apache.isis.core.metamodel.facetapi.FacetHolder;
 public class LazyPropertyFacetDefault extends FacetAbstract implements LazyPropertyFacet {
     
     public LazyPropertyFacetDefault(final FacetHolder facetHolder) {
-        super(LazyPropertyFacet.class, facetHolder, false);
+        super(LazyPropertyFacet.class, facetHolder, Derivation.NOT_DERIVED);
     }
     
 }

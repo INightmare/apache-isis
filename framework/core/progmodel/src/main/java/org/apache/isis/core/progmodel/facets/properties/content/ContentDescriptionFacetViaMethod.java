@@ -31,7 +31,7 @@ public class ContentDescriptionFacetViaMethod extends FacetAbstract {
     private Method method;
     
     public ContentDescriptionFacetViaMethod(final Method method, final FacetHolder holder) {
-        super(ContentDescriptionFacetViaMethod.class, holder, false);
+        super(ContentDescriptionFacetViaMethod.class, holder, Derivation.NOT_DERIVED);
         
         this.method = method;
     }
